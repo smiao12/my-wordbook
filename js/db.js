@@ -1,5 +1,5 @@
 /**
- * 数据层 — 支持 Supabase 云端同步 + IndexedDB 本地缓存
+ * 数据层 — 支持 Supabase 云端同步 + IndexedDB 本地缓存 + 内存回退
  */
 
 const DB_NAME = 'WordBookDB';
@@ -8,16 +8,31 @@ const STORE_NAME = 'words';
 
 let supabase = null;
 let isLocalMode = false;
+let memoryStore = []; // 内存回退存储
+let useMemory = false; // 是否使用内存存储（IndexedDB 不可用时）
+
+// 安全的 UUID 生成（不依赖 crypto.randomUUID）
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // 回退实现
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 // 初始化 Supabase（每次调用都从 localStorage 读取，支持动态配置）
 function initSupabase() {
-  const url = localStorage.getItem('sb_url') || '';
-  const key = localStorage.getItem('sb_key') || '';
-  if (!url || !key) {
-    isLocalMode = true;
-    return false;
-  }
   try {
+    const url = localStorage.getItem('sb_url') || '';
+    const key = localStorage.getItem('sb_key') || '';
+    if (!url || !key) {
+      isLocalMode = true;
+      return false;
+    }
     supabase = window.supabase.createClient(url, key);
     return true;
   } catch (e) {
@@ -27,9 +42,22 @@ function initSupabase() {
   }
 }
 
+// 检查 IndexedDB 是否可用
+function isIndexedDBAvailable() {
+  try {
+    return !!window.indexedDB;
+  } catch (e) {
+    return false;
+  }
+}
+
 // ===== IndexedDB 本地存储 =====
 function openDB() {
   return new Promise((resolve, reject) => {
+    if (!isIndexedDBAvailable()) {
+      reject(new Error('IndexedDB not available'));
+      return;
+    }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
@@ -45,12 +73,21 @@ function openDB() {
 }
 
 async function localAdd(word) {
+  if (useMemory) {
+    const wordToSave = { ...word };
+    wordToSave.id = wordToSave.id || generateUUID();
+    wordToSave.created_at = wordToSave.created_at || new Date().toISOString();
+    wordToSave.updated_at = wordToSave.updated_at || new Date().toISOString();
+    memoryStore.push(wordToSave);
+    return wordToSave;
+  }
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     const wordToSave = { ...word };
-    wordToSave.id = wordToSave.id || crypto.randomUUID();
+    wordToSave.id = wordToSave.id || generateUUID();
     wordToSave.created_at = wordToSave.created_at || new Date().toISOString();
     wordToSave.updated_at = wordToSave.updated_at || new Date().toISOString();
     const request = store.put(wordToSave);
@@ -60,22 +97,36 @@ async function localAdd(word) {
 }
 
 async function localGetAll() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.getAll();
-    request.onsuccess = () => {
-      const results = request.result;
-      // 按时间倒序
-      results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      resolve(results);
-    };
-    request.onerror = () => reject(request.error);
-  });
+  if (useMemory) {
+    return [...memoryStore].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const results = request.result;
+        results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        resolve(results);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    // IndexedDB 失败，切换到内存模式
+    console.warn('IndexedDB failed, switching to memory mode:', e);
+    useMemory = true;
+    return [...memoryStore].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
 }
 
 async function localGetById(id) {
+  if (useMemory) {
+    return memoryStore.find(w => w.id === id) || null;
+  }
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -87,6 +138,13 @@ async function localGetById(id) {
 }
 
 async function localUpdate(id, data) {
+  if (useMemory) {
+    const idx = memoryStore.findIndex(w => w.id === id);
+    if (idx === -1) throw new Error('Word not found');
+    memoryStore[idx] = { ...memoryStore[idx], ...data, updated_at: new Date().toISOString() };
+    return memoryStore[idx];
+  }
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -107,6 +165,11 @@ async function localUpdate(id, data) {
 }
 
 async function localDelete(id) {
+  if (useMemory) {
+    memoryStore = memoryStore.filter(w => w.id !== id);
+    return;
+  }
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -118,14 +181,24 @@ async function localDelete(id) {
 }
 
 async function localClear() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.clear();
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  if (useMemory) {
+    memoryStore = [];
+    return;
+  }
+
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    // 如果 IndexedDB 不可用，清空内存
+    memoryStore = [];
+  }
 }
 
 // ===== Supabase 云端存储 =====
@@ -172,6 +245,7 @@ async function cloudDelete(id) {
 // ===== 统一接口 =====
 var db = {
   isLocal: () => isLocalMode,
+  isMemory: () => useMemory,
 
   async getAll() {
     if (isLocalMode || !supabase) {
@@ -184,17 +258,20 @@ var db = {
       }
       // 同步到本地缓存
       await localClear();
-      // 批量写入，使用单次 transaction
-      const db = await openDB();
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      for (const word of words) {
-        store.put(word);
+      if (!useMemory) {
+        const idb = await openDB();
+        const tx = idb.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        for (const word of words) {
+          store.put(word);
+        }
+        await new Promise((resolve, reject) => {
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+      } else {
+        memoryStore = [...words];
       }
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
       return words;
     } catch (e) {
       console.warn('Cloud fetch failed, falling back to local:', e);
