@@ -170,7 +170,7 @@ async function cloudDelete(id) {
 }
 
 // ===== 统一接口 =====
-const db = {
+var db = {
   isLocal: () => isLocalMode,
 
   async getAll() {
