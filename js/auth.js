@@ -4,8 +4,23 @@
 
 let currentUser = null;
 
+// 更新云端状态提示
+function updateCloudStatus() {
+  const el = document.getElementById('cloud-status');
+  if (!el) return;
+  if (supabase) {
+    el.textContent = '✓ 云端同步已配置';
+    el.className = 'cloud-status configured';
+  } else {
+    el.textContent = '⚠ 云端同步未配置，登录/注册功能不可用';
+    el.className = 'cloud-status not-configured';
+  }
+}
+
 // 初始化认证状态
 async function initAuth() {
+  updateCloudStatus();
+
   if (!supabase) {
     // 检查本地模式
     const localUser = localStorage.getItem('local_user');
@@ -45,6 +60,11 @@ async function initAuth() {
 
 // 注册
 async function handleRegister() {
+  if (!supabase) {
+    showToast('云端同步未配置，请使用「本地模式」或在设置中配置 Supabase');
+    return;
+  }
+
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
 
@@ -72,6 +92,11 @@ async function handleRegister() {
 
 // 登录
 async function handleLogin() {
+  if (!supabase) {
+    showToast('云端同步未配置，请使用「本地模式」或在设置中配置 Supabase');
+    return;
+  }
+
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
 

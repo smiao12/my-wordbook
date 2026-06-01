@@ -1130,6 +1130,26 @@ textarea {
   }
 }
 
+/* ===== Cloud Status ===== */
+.cloud-status {
+  text-align: center;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.cloud-status.configured {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.cloud-status.not-configured {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
 /* ===== Theme Picker ===== */
 .theme-picker {
   display: flex;
