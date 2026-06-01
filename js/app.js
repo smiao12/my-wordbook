@@ -467,6 +467,57 @@ async function exportWords() {
   }
 }
 
+async function exportWordsPDF() {
+  showLoading(true);
+  try {
+    const words = await db.export();
+    if (words.length === 0) {
+      showToast('没有单词可导出');
+      showLoading(false);
+      return;
+    }
+
+    const container = document.getElementById('pdf-container');
+    const wordsContainer = document.getElementById('pdf-words');
+    const dateEl = container.querySelector('.pdf-date');
+
+    // 设置日期
+    dateEl.textContent = `导出日期：${new Date().toLocaleDateString('zh-CN')}  共 ${words.length} 个单词`;
+
+    // 生成单词列表
+    wordsContainer.innerHTML = words.map((w, i) => `
+      <div class="pdf-word-item">
+        <div class="pdf-word">${i + 1}. ${escapeHtml(w.word)}</div>
+        ${w.phonetic ? `<div class="pdf-phonetic">${escapeHtml(w.phonetic)}</div>` : ''}
+        <div class="pdf-meaning">${escapeHtml(w.meaning)}</div>
+        ${w.example ? `<div class="pdf-example">${escapeHtml(w.example)}</div>` : ''}
+        ${w.tags && w.tags.length ? `<div class="pdf-tags">${w.tags.map(t => `<span class="pdf-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      </div>
+    `).join('');
+
+    // 显示打印容器
+    container.classList.remove('hidden');
+
+    // 关闭设置弹窗
+    closeSettings();
+
+    // 延迟执行打印，让浏览器渲染完成
+    setTimeout(() => {
+      window.print();
+      // 打印完成后隐藏
+      setTimeout(() => {
+        container.classList.add('hidden');
+      }, 500);
+    }, 300);
+
+    showToast('请在打印对话框中选择「保存为PDF」');
+  } catch (e) {
+    showToast('导出失败：' + e.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
 async function clearAllWords() {
   if (!confirm('确定要清空所有单词吗？此操作不可恢复！')) return;
 

@@ -370,6 +370,10 @@ apple | 苹果&#10;banana"></textarea>
         <div class="settings-section">
           <h3>数据</h3>
           <div class="settings-item">
+            <span>导出单词（PDF）</span>
+            <button class="btn btn-outline btn-sm" onclick="exportWordsPDF()">导出</button>
+          </div>
+          <div class="settings-item">
             <span>导出单词（JSON）</span>
             <button class="btn btn-outline btn-sm" onclick="exportWords()">导出</button>
           </div>
@@ -396,6 +400,18 @@ apple | 苹果&#10;banana"></textarea>
   <div id="loading" class="loading hidden">
     <div class="loading-spinner"></div>
     <span>加载中...</span>
+  </div>
+
+  <!-- PDF 打印容器（隐藏，打印时显示） -->
+  <div id="pdf-container" class="pdf-container hidden">
+    <div class="pdf-header">
+      <h1>我的单词本</h1>
+      <p class="pdf-date"></p>
+    </div>
+    <div id="pdf-words" class="pdf-words"></div>
+    <div class="pdf-footer">
+      <p>由「我的单词本」导出</p>
+    </div>
   </div>
 
   <script src="js/db.js"></script>

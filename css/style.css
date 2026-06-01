@@ -1210,6 +1210,127 @@ textarea {
   background: linear-gradient(135deg, #FAF5FF 50%, #F3E8FF 50%);
 }
 
+/* ===== PDF Export Styles ===== */
+.pdf-container {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: white;
+  color: #1E293B;
+  padding: 40px;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pdf-container.hidden {
+  display: none !important;
+}
+
+.pdf-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #4F46E5;
+}
+
+.pdf-header h1 {
+  font-size: 28px;
+  color: #4F46E5;
+  margin: 0 0 8px 0;
+}
+
+.pdf-date {
+  font-size: 14px;
+  color: #64748B;
+  margin: 0;
+}
+
+.pdf-words {
+  display: grid;
+  gap: 16px;
+}
+
+.pdf-word-item {
+  padding: 16px 20px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.pdf-word-item .pdf-word {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 4px;
+}
+
+.pdf-word-item .pdf-phonetic {
+  font-size: 14px;
+  color: #64748B;
+  font-family: 'Times New Roman', serif;
+  margin-bottom: 8px;
+}
+
+.pdf-word-item .pdf-meaning {
+  font-size: 15px;
+  color: #4F46E5;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.pdf-word-item .pdf-example {
+  font-size: 13px;
+  color: #64748B;
+  font-style: italic;
+  padding: 8px 12px;
+  background: #F8FAFC;
+  border-left: 3px solid #818CF8;
+  border-radius: 0 4px 4px 0;
+}
+
+.pdf-word-item .pdf-tags {
+  margin-top: 8px;
+}
+
+.pdf-word-item .pdf-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4F46E5;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 10px;
+  margin-right: 6px;
+}
+
+.pdf-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #E2E8F0;
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+/* Print styles */
+@media print {
+  body > *:not(.pdf-container) {
+    display: none !important;
+  }
+
+  .pdf-container {
+    position: static !important;
+    display: block !important;
+    padding: 20px;
+  }
+
+  .pdf-word-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
