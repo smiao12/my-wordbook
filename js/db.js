@@ -24,11 +24,19 @@ function generateUUID() {
 }
 
 // 初始化 Supabase
+// 硬编码 Supabase 配置（已部署的 wordbook 项目）
+// 如需切换项目，可在浏览器控制台执行：
+// localStorage.setItem('sb_url', '你的URL'); localStorage.setItem('sb_key', '你的KEY'); location.reload();
+const DEFAULT_SB_URL = 'https://sipqiuoqdjdkldqcqji.supabase.co';
+const DEFAULT_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcHFpdXVvcWRqZGtsZHFjcWppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDkzNjAsImV4cCI6MjA5NTk4NTM2MH0.tUgLwx-bgO5YGvMQV_ITUoN9IF4alwOs3xRUz11V1LU';
+
 function initSupabase() {
   try {
-    const url = localStorage.getItem('sb_url') || '';
-    const key = localStorage.getItem('sb_key') || '';
-    if (!url || !key) {
+    // 优先从 localStorage 读取（方便用户切换项目）
+    const url = localStorage.getItem('sb_url') || DEFAULT_SB_URL;
+    const key = localStorage.getItem('sb_key') || DEFAULT_SB_KEY;
+
+    if (!url || !key || url === 'https://YOUR_PROJECT.supabase.co') {
       isLocalMode = true;
       return false;
     }
