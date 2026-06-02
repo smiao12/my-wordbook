@@ -32,10 +32,28 @@ function initSupabase() {
       isLocalMode = true;
       return false;
     }
+
+    // 检查 CDN 是否加载成功
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+      console.error('Supabase CDN not loaded');
+      isLocalMode = true;
+      return false;
+    }
+
     supabase = window.supabase.createClient(url, key);
+
+    // 验证返回的对象是否正确
+    if (!supabase || !supabase.auth) {
+      console.error('Supabase init returned invalid object (missing .auth)');
+      supabase = null;
+      isLocalMode = true;
+      return false;
+    }
+
     return true;
   } catch (e) {
     console.error('Supabase init failed:', e);
+    supabase = null;
     isLocalMode = true;
     return false;
   }

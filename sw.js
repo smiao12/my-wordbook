@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordbook-v2';
+const CACHE_NAME = 'wordbook-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

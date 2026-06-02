@@ -21,33 +21,42 @@ function updateCloudStatus() {
 async function initAuth() {
   updateCloudStatus();
 
-  // 如果已配置 Supabase，检查会话
-  if (supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      currentUser = session.user;
-      showAppPage();
-      loadWords();
-      return;
-    }
-
-    // 监听认证状态变化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+  // 如果已配置 Supabase（且 auth 可用），检查会话
+  if (supabase && supabase.auth) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
         currentUser = session.user;
         showAppPage();
         loadWords();
-      } else if (event === 'SIGNED_OUT') {
-        currentUser = null;
-        showAuthPage();
+        return;
       }
-    });
 
-    window._authSubscription = subscription;
-    return;
+      // 监听认证状态变化
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          currentUser = session.user;
+          showAppPage();
+          loadWords();
+        } else if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          showAuthPage();
+        }
+      });
+
+      window._authSubscription = subscription;
+      return;
+    } catch (e) {
+      console.error('Supabase auth init failed:', e);
+      // 清除错误配置，回退到本地
+      supabase = null;
+    }
   }
 
-  // 未配置 Supabase：自动进入本地模式
+  // 未配置或配置不正确：自动进入本地模式
+  if (supabase && !supabase.auth) {
+    supabase = null;
+  }
   enterLocalMode();
 }
 
@@ -61,8 +70,12 @@ function enterLocalMode() {
 
 // 注册
 async function handleRegister() {
-  if (!supabase) {
+  if (!supabase || !supabase.auth) {
     showToast('云端同步未配置，已自动使用本地模式');
+    // 清除可能错误的配置
+    localStorage.removeItem('sb_url');
+    localStorage.removeItem('sb_key');
+    supabase = null;
     enterLocalMode();
     return;
   }
@@ -94,8 +107,11 @@ async function handleRegister() {
 
 // 登录
 async function handleLogin() {
-  if (!supabase) {
+  if (!supabase || !supabase.auth) {
     showToast('云端同步未配置，已自动使用本地模式');
+    localStorage.removeItem('sb_url');
+    localStorage.removeItem('sb_key');
+    supabase = null;
     enterLocalMode();
     return;
   }
