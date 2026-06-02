@@ -1,5 +1,5 @@
 /**
- * 认证模块 — Supabase Auth + 本地模式
+ * 认证模块 — Supabase Auth + 本地模式（自动）
  */
 
 let currentUser = null;
@@ -12,7 +12,7 @@ function updateCloudStatus() {
     el.textContent = '✓ 云端同步已配置';
     el.className = 'cloud-status configured';
   } else {
-    el.textContent = '⚠ 云端同步未配置，登录/注册功能不可用';
+    el.textContent = '⚠ 云端同步未配置，已自动使用本地模式';
     el.className = 'cloud-status not-configured';
   }
 }
@@ -21,47 +21,49 @@ function updateCloudStatus() {
 async function initAuth() {
   updateCloudStatus();
 
-  if (!supabase) {
-    // 检查本地模式
-    const localUser = localStorage.getItem('local_user');
-    if (localUser) {
-      currentUser = JSON.parse(localUser);
-      isLocalMode = true;
-      showAppPage();
-      loadWords();
-    }
-    return;
-  }
-
-  // 检查已有会话
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    showAppPage();
-    loadWords();
-    return;
-  }
-
-  // 监听认证状态变化
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+  // 如果已配置 Supabase，检查会话
+  if (supabase) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
       currentUser = session.user;
       showAppPage();
       loadWords();
-    } else if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      showAuthPage();
+      return;
     }
-  });
 
-  // 保存订阅以便清理
-  window._authSubscription = subscription;
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        showAppPage();
+        loadWords();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        showAuthPage();
+      }
+    });
+
+    window._authSubscription = subscription;
+    return;
+  }
+
+  // 未配置 Supabase：自动进入本地模式
+  enterLocalMode();
+}
+
+// 自动进入本地模式
+function enterLocalMode() {
+  isLocalMode = true;
+  currentUser = { id: 'local', email: '本地用户' };
+  showAppPage();
+  loadWords();
 }
 
 // 注册
 async function handleRegister() {
   if (!supabase) {
-    showToast('云端同步未配置，请使用「本地模式」或在设置中配置 Supabase');
+    showToast('云端同步未配置，已自动使用本地模式');
+    enterLocalMode();
     return;
   }
 
@@ -93,7 +95,8 @@ async function handleRegister() {
 // 登录
 async function handleLogin() {
   if (!supabase) {
-    showToast('云端同步未配置，请使用「本地模式」或在设置中配置 Supabase');
+    showToast('云端同步未配置，已自动使用本地模式');
+    enterLocalMode();
     return;
   }
 
@@ -123,7 +126,6 @@ async function handleLogin() {
 // 登出
 async function handleLogout() {
   if (isLocalMode) {
-    localStorage.removeItem('local_user');
     currentUser = null;
     isLocalMode = false;
     showAuthPage();
@@ -132,7 +134,6 @@ async function handleLogout() {
 
   showLoading(true);
   try {
-    // 清理订阅
     if (window._authSubscription) {
       window._authSubscription.unsubscribe();
       window._authSubscription = null;
@@ -147,23 +148,12 @@ async function handleLogout() {
   }
 }
 
-// 本地模式（无需登录）
-function useLocalMode() {
-  isLocalMode = true;
-  currentUser = { id: 'local', email: '本地用户' };
-  localStorage.setItem('local_user', JSON.stringify(currentUser));
-  showAppPage();
-  loadWords();
-  showToast('已切换到本地模式，数据仅保存在本机');
-}
-
 // 页面切换
 function showAuthPage() {
   document.getElementById('auth-page').classList.remove('hidden');
   document.getElementById('app-page').classList.add('hidden');
   document.getElementById('review-page').classList.add('hidden');
   document.getElementById('import-page').classList.add('hidden');
-  // 清空输入
   document.getElementById('login-email').value = '';
   document.getElementById('login-password').value = '';
   document.getElementById('register-email').value = '';

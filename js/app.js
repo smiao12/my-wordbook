@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initSupabase === 'function') initSupabase();
   await initAuth();
 
-  // 如果未登录且没有本地用户，显示登录页
-  if (!currentUser) {
+  // 如果未配置 Supabase 且未自动进入本地模式，显示登录页
+  if (!currentUser && supabase) {
     showAuthPage();
   }
 

@@ -1,22 +1,21 @@
 /**
- * 数据层 — 支持 Supabase 云端同步 + IndexedDB 本地缓存 + 内存回退
+ * 数据层 — 支持 Supabase 云端同步 + IndexedDB 本地缓存 + localStorage 备选
  */
 
 const DB_NAME = 'WordBookDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'words';
+const LS_KEY = 'wordbook_data_v1';
 
 let supabase = null;
 let isLocalMode = false;
-let memoryStore = []; // 内存回退存储
-let useMemory = false; // 是否使用内存存储（IndexedDB 不可用时）
+let storageMode = 'idb'; // 'idb' | 'localStorage' | 'memory'
 
-// 安全的 UUID 生成（不依赖 crypto.randomUUID）
+// 安全的 UUID 生成
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  // 回退实现
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -24,7 +23,7 @@ function generateUUID() {
   });
 }
 
-// 初始化 Supabase（每次调用都从 localStorage 读取，支持动态配置）
+// 初始化 Supabase
 function initSupabase() {
   try {
     const url = localStorage.getItem('sb_url') || '';
@@ -42,22 +41,30 @@ function initSupabase() {
   }
 }
 
-// 检查 IndexedDB 是否可用
-function isIndexedDBAvailable() {
+// ===== 存储模式检测 =====
+function detectStorageMode() {
+  // 检测 IndexedDB
   try {
-    return !!window.indexedDB;
-  } catch (e) {
-    return false;
-  }
+    if (!!window.indexedDB) {
+      return 'idb';
+    }
+  } catch (e) {}
+
+  // 检测 localStorage
+  try {
+    const test = '__storage_test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return 'localStorage';
+  } catch (e) {}
+
+  // 回退到内存
+  return 'memory';
 }
 
-// ===== IndexedDB 本地存储 =====
+// ===== IndexedDB =====
 function openDB() {
   return new Promise((resolve, reject) => {
-    if (!isIndexedDBAvailable()) {
-      reject(new Error('IndexedDB not available'));
-      return;
-    }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
@@ -72,132 +79,167 @@ function openDB() {
   });
 }
 
+// ===== localStorage 操作 =====
+function lsGetAll() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function lsSaveAll(words) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(words));
+    return true;
+  } catch (e) {
+    console.error('localStorage save failed:', e);
+    return false;
+  }
+}
+
+// ===== 统一本地存储操作 =====
+async function localGetAll() {
+  if (storageMode === 'idb') {
+    try {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const results = request.result;
+          results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          resolve(results);
+        };
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      // IndexedDB 失败，降级到 localStorage
+      storageMode = 'localStorage';
+      return lsGetAll();
+    }
+  }
+  if (storageMode === 'localStorage') {
+    return lsGetAll();
+  }
+  // memory fallback
+  return [];
+}
+
 async function localAdd(word) {
-  if (useMemory) {
-    const wordToSave = { ...word };
-    wordToSave.id = wordToSave.id || generateUUID();
-    wordToSave.created_at = wordToSave.created_at || new Date().toISOString();
-    wordToSave.updated_at = wordToSave.updated_at || new Date().toISOString();
-    memoryStore.push(wordToSave);
+  const wordToSave = {
+    ...word,
+    id: word.id || generateUUID(),
+    created_at: word.created_at || new Date().toISOString(),
+    updated_at: word.updated_at || new Date().toISOString()
+  };
+
+  if (storageMode === 'idb') {
+    try {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.put(wordToSave);
+        request.onsuccess = () => resolve(wordToSave);
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      storageMode = 'localStorage';
+    }
+  }
+
+  if (storageMode === 'localStorage') {
+    const words = lsGetAll();
+    words.unshift(wordToSave);
+    lsSaveAll(words);
     return wordToSave;
   }
 
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const wordToSave = { ...word };
-    wordToSave.id = wordToSave.id || generateUUID();
-    wordToSave.created_at = wordToSave.created_at || new Date().toISOString();
-    wordToSave.updated_at = wordToSave.updated_at || new Date().toISOString();
-    const request = store.put(wordToSave);
-    request.onsuccess = () => resolve(wordToSave);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function localGetAll() {
-  if (useMemory) {
-    return [...memoryStore].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }
-
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const results = request.result;
-        results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        resolve(results);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  } catch (e) {
-    // IndexedDB 失败，切换到内存模式
-    console.warn('IndexedDB failed, switching to memory mode:', e);
-    useMemory = true;
-    return [...memoryStore].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }
-}
-
-async function localGetById(id) {
-  if (useMemory) {
-    return memoryStore.find(w => w.id === id) || null;
-  }
-
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.get(id);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  // memory fallback (should not happen)
+  return wordToSave;
 }
 
 async function localUpdate(id, data) {
-  if (useMemory) {
-    const idx = memoryStore.findIndex(w => w.id === id);
-    if (idx === -1) throw new Error('Word not found');
-    memoryStore[idx] = { ...memoryStore[idx], ...data, updated_at: new Date().toISOString() };
-    return memoryStore[idx];
+  if (storageMode === 'idb') {
+    try {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const getReq = store.get(id);
+        getReq.onsuccess = () => {
+          if (!getReq.result) {
+            reject(new Error('Word not found'));
+            return;
+          }
+          const updated = { ...getReq.result, ...data, updated_at: new Date().toISOString() };
+          const putReq = store.put(updated);
+          putReq.onsuccess = () => resolve(updated);
+          putReq.onerror = () => reject(putReq.error);
+        };
+        getReq.onerror = () => reject(getReq.error);
+      });
+    } catch (e) {
+      storageMode = 'localStorage';
+    }
   }
 
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const getReq = store.get(id);
-    getReq.onsuccess = () => {
-      if (!getReq.result) {
-        reject(new Error('Word not found'));
-        return;
-      }
-      const updated = { ...getReq.result, ...data, updated_at: new Date().toISOString() };
-      const putReq = store.put(updated);
-      putReq.onsuccess = () => resolve(updated);
-      putReq.onerror = () => reject(putReq.error);
-    };
-    getReq.onerror = () => reject(getReq.error);
-  });
+  if (storageMode === 'localStorage') {
+    const words = lsGetAll();
+    const idx = words.findIndex(w => w.id === id);
+    if (idx === -1) throw new Error('Word not found');
+    words[idx] = { ...words[idx], ...data, updated_at: new Date().toISOString() };
+    lsSaveAll(words);
+    return words[idx];
+  }
+
+  throw new Error('Word not found');
 }
 
 async function localDelete(id) {
-  if (useMemory) {
-    memoryStore = memoryStore.filter(w => w.id !== id);
-    return;
+  if (storageMode === 'idb') {
+    try {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      storageMode = 'localStorage';
+    }
   }
 
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.delete(id);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  if (storageMode === 'localStorage') {
+    const words = lsGetAll().filter(w => w.id !== id);
+    lsSaveAll(words);
+  }
 }
 
 async function localClear() {
-  if (useMemory) {
-    memoryStore = [];
-    return;
+  if (storageMode === 'idb') {
+    try {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      storageMode = 'localStorage';
+    }
   }
 
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  } catch (e) {
-    // 如果 IndexedDB 不可用，清空内存
-    memoryStore = [];
+  if (storageMode === 'localStorage') {
+    localStorage.removeItem(LS_KEY);
   }
 }
 
@@ -245,7 +287,7 @@ async function cloudDelete(id) {
 // ===== 统一接口 =====
 var db = {
   isLocal: () => isLocalMode,
-  isMemory: () => useMemory,
+  storageMode: () => storageMode,
 
   async getAll() {
     if (isLocalMode || !supabase) {
@@ -256,9 +298,8 @@ var db = {
       if (!Array.isArray(words)) {
         throw new Error('Invalid response from cloud');
       }
-      // 同步到本地缓存
       await localClear();
-      if (!useMemory) {
+      if (storageMode === 'idb') {
         const idb = await openDB();
         const tx = idb.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
@@ -269,8 +310,8 @@ var db = {
           tx.oncomplete = resolve;
           tx.onerror = () => reject(tx.error);
         });
-      } else {
-        memoryStore = [...words];
+      } else if (storageMode === 'localStorage') {
+        lsSaveAll(words);
       }
       return words;
     } catch (e) {
@@ -322,7 +363,6 @@ var db = {
 
   async clear() {
     if (!isLocalMode && supabase) {
-      // 先删云端，再清本地（避免云端失败导致本地丢失）
       try {
         const words = await cloudGetAll();
         for (const word of words) {
@@ -330,13 +370,12 @@ var db = {
         }
       } catch (e) {
         console.warn('Cloud clear failed:', e);
-        throw e; // 云端失败则不清本地
+        throw e;
       }
     }
     await localClear();
   },
 
-  // 导出所有单词为 JSON
   async export() {
     return localGetAll();
   }
@@ -344,8 +383,11 @@ var db = {
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
+  storageMode = detectStorageMode();
+  if (storageMode === 'memory') {
+    console.warn('No persistent storage available. Data will be lost on page refresh.');
+  }
   initSupabase();
 });
 
-// 确保全局可用
 window.db = db;
