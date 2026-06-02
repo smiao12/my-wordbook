@@ -8,7 +8,7 @@ let currentUser = null;
 function updateCloudStatus() {
   const el = document.getElementById('cloud-status');
   if (!el) return;
-  if (supabase) {
+  if (_sbClient) {
     el.textContent = '✓ 云端同步已配置';
     el.className = 'cloud-status configured';
   } else {
@@ -22,9 +22,9 @@ async function initAuth() {
   updateCloudStatus();
 
   // 如果已配置 Supabase（且 auth 可用），检查会话
-  if (supabase && supabase.auth) {
+  if (_sbClient && _sbClient.auth) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await _sbClient.auth.getSession();
       if (session?.user) {
         currentUser = session.user;
         showAppPage();
@@ -33,7 +33,7 @@ async function initAuth() {
       }
 
       // 监听认证状态变化
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const { data: { subscription } } = _sbClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           currentUser = session.user;
           showAppPage();
@@ -49,13 +49,13 @@ async function initAuth() {
     } catch (e) {
       console.error('Supabase auth init failed:', e);
       // 清除错误配置，回退到本地
-      supabase = null;
+      _sbClient = null;
     }
   }
 
   // 未配置或配置不正确：自动进入本地模式
-  if (supabase && !supabase.auth) {
-    supabase = null;
+  if (_sbClient && !_sbClient.auth) {
+    _sbClient = null;
   }
   enterLocalMode();
 }
@@ -70,12 +70,12 @@ function enterLocalMode() {
 
 // 注册
 async function handleRegister() {
-  if (!supabase || !supabase.auth) {
+  if (!_sbClient || !_sbClient.auth) {
     showToast('云端同步未配置，已自动使用本地模式');
     // 清除可能错误的配置
     localStorage.removeItem('sb_url');
     localStorage.removeItem('sb_key');
-    supabase = null;
+    _sbClient = null;
     enterLocalMode();
     return;
   }
@@ -94,7 +94,7 @@ async function handleRegister() {
 
   showLoading(true);
   try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await _sbClient.auth.signUp({ email, password });
     if (error) throw error;
     showToast('注册成功！请登录');
     showLogin();
@@ -107,11 +107,11 @@ async function handleRegister() {
 
 // 登录
 async function handleLogin() {
-  if (!supabase || !supabase.auth) {
+  if (!_sbClient || !_sbClient.auth) {
     showToast('云端同步未配置，已自动使用本地模式');
     localStorage.removeItem('sb_url');
     localStorage.removeItem('sb_key');
-    supabase = null;
+    _sbClient = null;
     enterLocalMode();
     return;
   }
@@ -126,7 +126,7 @@ async function handleLogin() {
 
   showLoading(true);
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await _sbClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     currentUser = data.user;
     showAppPage();
@@ -154,7 +154,7 @@ async function handleLogout() {
       window._authSubscription.unsubscribe();
       window._authSubscription = null;
     }
-    await supabase.auth.signOut();
+    await _sbClient.auth.signOut();
     currentUser = null;
     showAuthPage();
   } catch (e) {

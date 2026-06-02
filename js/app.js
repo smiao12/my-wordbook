@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initAuth();
 
   // 如果未配置 Supabase 且未自动进入本地模式，显示登录页
-  if (!currentUser && supabase) {
+  if (!currentUser && _sbClient) {
     showAuthPage();
   }
 
@@ -132,9 +132,9 @@ async function lookupWord() {
   showLoading(true);
 
   // 优先：尝试 Supabase Edge Function（如果配置了百度翻译）
-  if (supabase) {
+  if (_sbClient) {
     try {
-      const { data, error } = await supabase.functions.invoke('translate', {
+      const { data, error } = await _sbClient.functions.invoke('translate', {
         body: { word }
       });
       if (!error && data?.translation) {

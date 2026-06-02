@@ -7,9 +7,11 @@ const DB_VERSION = 1;
 const STORE_NAME = 'words';
 const LS_KEY = 'wordbook_data_v1';
 
-let supabase = null;
-let isLocalMode = false;
-let storageMode = 'idb'; // 'idb' | 'localStorage' | 'memory'
+// CDN 加载的库会创建 window.supabase（含 createClient 方法）
+// db.js 里我们用内部变量 _sbClient 持有实例，不覆盖 CDN 的全局对象
+var _sbClient = null;
+var isLocalMode = false;
+var storageMode = 'idb'; // 'idb' | 'localStorage' | 'memory'
 
 // 安全的 UUID 生成
 function generateUUID() {
@@ -52,12 +54,12 @@ function initSupabase() {
       return false;
     }
 
-    supabase = window.supabase.createClient(url, key);
+    _sbClient = window.supabase.createClient(url, key);
 
     // 验证返回的对象是否正确
-    if (!supabase || !supabase.auth) {
+    if (!_sbClient || !_sbClient.auth) {
       console.error('[Supabase] Invalid object, missing .auth');
-      supabase = null;
+      _sbClient = null;
       isLocalMode = true;
       return false;
     }
@@ -66,7 +68,7 @@ function initSupabase() {
     return true;
   } catch (e) {
     console.error('[Supabase] Init error:', e);
-    supabase = null;
+    _sbClient = null;
     isLocalMode = true;
     return false;
   }
@@ -276,8 +278,8 @@ async function localClear() {
 
 // ===== Supabase 云端存储 =====
 async function cloudGetAll() {
-  if (!supabase || !currentUser) return [];
-  const { data, error } = await supabase
+  if (!_sbClient || !currentUser) return [];
+  const { data, error } = await _sbClient
     .from('words')
     .select('*')
     .eq('user_id', currentUser.id)
@@ -287,8 +289,8 @@ async function cloudGetAll() {
 }
 
 async function cloudAdd(word) {
-  if (!supabase) throw new Error('Supabase not initialized');
-  const { data, error } = await supabase
+  if (!_sbClient) throw new Error('Supabase not initialized');
+  const { data, error } = await _sbClient
     .from('words')
     .insert([word])
     .select()
@@ -298,8 +300,8 @@ async function cloudAdd(word) {
 }
 
 async function cloudUpdate(id, data) {
-  if (!supabase) throw new Error('Supabase not initialized');
-  const { data: result, error } = await supabase
+  if (!_sbClient) throw new Error('Supabase not initialized');
+  const { data: result, error } = await _sbClient
     .from('words')
     .update(data)
     .eq('id', id)
@@ -310,8 +312,8 @@ async function cloudUpdate(id, data) {
 }
 
 async function cloudDelete(id) {
-  if (!supabase) throw new Error('Supabase not initialized');
-  const { error } = await supabase.from('words').delete().eq('id', id);
+  if (!_sbClient) throw new Error('Supabase not initialized');
+  const { error } = await _sbClient.from('words').delete().eq('id', id);
   if (error) throw error;
 }
 
@@ -321,7 +323,7 @@ var db = {
   storageMode: () => storageMode,
 
   async getAll() {
-    if (isLocalMode || !supabase) {
+    if (isLocalMode || !_sbClient) {
       return localGetAll();
     }
     try {
@@ -352,7 +354,7 @@ var db = {
   },
 
   async add(word) {
-    if (isLocalMode || !supabase) {
+    if (isLocalMode || !_sbClient) {
       return localAdd(word);
     }
     try {
@@ -366,7 +368,7 @@ var db = {
   },
 
   async update(id, data) {
-    if (isLocalMode || !supabase) {
+    if (isLocalMode || !_sbClient) {
       return localUpdate(id, data);
     }
     try {
@@ -380,7 +382,7 @@ var db = {
   },
 
   async delete(id) {
-    if (isLocalMode || !supabase) {
+    if (isLocalMode || !_sbClient) {
       return localDelete(id);
     }
     try {
@@ -393,7 +395,7 @@ var db = {
   },
 
   async clear() {
-    if (!isLocalMode && supabase) {
+    if (!isLocalMode && _sbClient) {
       try {
         const words = await cloudGetAll();
         for (const word of words) {
