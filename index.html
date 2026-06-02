@@ -10,7 +10,25 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    // 多 CDN 加载 Supabase，国内网络不稳定时自动切换
+    (function() {
+      var primary = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      var fallback = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      var script = document.createElement('script');
+      script.src = primary;
+      script.onerror = function() {
+        console.warn('[CDN] Primary failed, trying fallback');
+        var fb = document.createElement('script');
+        fb.src = fallback;
+        fb.onerror = function() {
+          console.error('[CDN] Both CDN sources failed');
+        };
+        document.head.appendChild(fb);
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

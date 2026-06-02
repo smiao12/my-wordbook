@@ -36,14 +36,18 @@ function initSupabase() {
     const url = localStorage.getItem('sb_url') || DEFAULT_SB_URL;
     const key = localStorage.getItem('sb_key') || DEFAULT_SB_KEY;
 
+    console.log('[Supabase] URL:', url.substring(0, 30) + '...');
+    console.log('[Supabase] CDN loaded?', !!window.supabase, 'createClient?', typeof window.supabase?.createClient);
+
     if (!url || !key || url === 'https://YOUR_PROJECT.supabase.co') {
+      console.log('[Supabase] No valid URL/KEY');
       isLocalMode = true;
       return false;
     }
 
     // 检查 CDN 是否加载成功
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-      console.error('Supabase CDN not loaded');
+      console.error('[Supabase] CDN not loaded, falling back to local mode');
       isLocalMode = true;
       return false;
     }
@@ -52,15 +56,16 @@ function initSupabase() {
 
     // 验证返回的对象是否正确
     if (!supabase || !supabase.auth) {
-      console.error('Supabase init returned invalid object (missing .auth)');
+      console.error('[Supabase] Invalid object, missing .auth');
       supabase = null;
       isLocalMode = true;
       return false;
     }
 
+    console.log('[Supabase] Initialized successfully');
     return true;
   } catch (e) {
-    console.error('Supabase init failed:', e);
+    console.error('[Supabase] Init error:', e);
     supabase = null;
     isLocalMode = true;
     return false;
