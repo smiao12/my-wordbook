@@ -95,6 +95,12 @@ function renderWordList(words) {
         <div class="word-title">
           <span class="word-text">${escapeHtml(word.word)}</span>
           ${word.phonetic ? `<span class="word-phonetic">${escapeHtml(word.phonetic)}</span>` : ''}
+          <button class="speak-btn" data-speak="${escapeHtml(word.word)}" title="朗读">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 010 7.07"/>
+            </svg>
+          </button>
         </div>
         <div class="word-actions">
           <button class="word-action-btn" data-action="delete" data-id="${escapeHtml(word.id)}" title="删除">
@@ -151,7 +157,8 @@ function renderReviewCard() {
 
   if (!word) return;
 
-  document.getElementById('review-word').textContent = word.word;
+  const reviewWordEl = document.getElementById('review-word');
+  if (reviewWordEl) reviewWordEl.textContent = word.word;
   document.getElementById('review-phonetic').textContent = word.phonetic || '';
   document.getElementById('review-meaning').textContent = word.meaning;
   document.getElementById('review-example').textContent = word.example || '';

@@ -1210,6 +1210,50 @@ textarea {
   background: linear-gradient(135deg, #FAF5FF 50%, #F3E8FF 50%);
 }
 
+.speak-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.speak-btn:hover {
+  background: var(--primary-light);
+  color: white;
+  transform: scale(1.1);
+}
+
+.speak-btn:active {
+  transform: scale(0.9);
+}
+
+.review-word {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.review-word .speak-btn {
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+}
+
+.review-word .speak-btn:hover {
+  background: var(--primary-light);
+  color: white;
+}
+
 /* ===== PDF Export Styles ===== */
 .pdf-container {
   position: fixed;

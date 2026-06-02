@@ -346,3 +346,6 @@ var db = {
 document.addEventListener('DOMContentLoaded', () => {
   initSupabase();
 });
+
+// 确保全局可用
+window.db = db;

@@ -2,10 +2,48 @@
  * 主应用逻辑
  */
 
+// 确保 db 存在（fallback，防止 db.js 加载失败）
+if (typeof db === 'undefined' || !db) {
+  console.warn('db.js not loaded, creating fallback');
+  var db = {
+    _memory: [],
+    isLocal: () => true,
+    isMemory: () => true,
+    async getAll() {
+      return [...this._memory].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    },
+    async add(word) {
+      const saved = {
+        ...word,
+        id: word.id || Date.now().toString(36) + Math.random().toString(36).slice(2),
+        created_at: word.created_at || new Date().toISOString(),
+        updated_at: word.updated_at || new Date().toISOString()
+      };
+      this._memory.unshift(saved);
+      return saved;
+    },
+    async update(id, data) {
+      const idx = this._memory.findIndex(w => w.id === id);
+      if (idx === -1) throw new Error('Word not found');
+      this._memory[idx] = { ...this._memory[idx], ...data, updated_at: new Date().toISOString() };
+      return this._memory[idx];
+    },
+    async delete(id) {
+      this._memory = this._memory.filter(w => w.id !== id);
+    },
+    async clear() {
+      this._memory = [];
+    },
+    async export() {
+      return [...this._memory];
+    }
+  };
+}
+
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
-  initSupabase();
+  if (typeof initSupabase === 'function') initSupabase();
   await initAuth();
 
   // 如果未登录且没有本地用户，显示登录页
@@ -536,6 +574,42 @@ async function clearAllWords() {
     showLoading(false);
   }
 }
+
+// ===== 发音功能 =====
+function speakWord(word) {
+  if (!word) return;
+  if (!window.speechSynthesis) {
+    showToast('您的浏览器不支持语音朗读');
+    return;
+  }
+  // 取消之前的朗读
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+}
+
+function speakCurrentWord() {
+  if (reviewOrder.length === 0) return;
+  const wordIndex = reviewOrder[currentReviewIndex];
+  const word = allWords[wordIndex];
+  if (word) {
+    speakWord(word.word);
+  }
+}
+
+// 事件委托：朗读按钮
+document.addEventListener('click', (e) => {
+  const speakBtn = e.target.closest('.speak-btn');
+  if (speakBtn) {
+    e.stopPropagation();
+    const word = speakBtn.dataset.speak;
+    if (word) {
+      speakWord(word);
+    }
+  }
+});
 
 // ===== 触摸滑动支持 =====
 let touchStartX = 0;
