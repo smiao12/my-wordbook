@@ -23,6 +23,21 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// 立即激活，不等待旧 Service Worker 停止
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    }).then(() => {
+      return self.clients.claim();
+    })
+  );
+});
+
 // 激活：清理旧缓存
 self.addEventListener('activate', (event) => {
   event.waitUntil(
