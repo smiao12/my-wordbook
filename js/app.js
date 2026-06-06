@@ -259,6 +259,20 @@ async function saveWord() {
     // 重新渲染
     handleSearch();
     renderTagFilter();
+
+    // 如果在复习模式，将新词加入复习队列
+    const reviewPage = document.getElementById('review-page');
+    if (!reviewPage.classList.contains('hidden') && reviewOrder.length > 0) {
+      // 旧索引映射到新 allWords（新词在 allWords[0]，其他索引+1）
+      reviewOrder = reviewOrder.map(idx => idx + 1);
+      // 在当前位置之后插入新词（索引 0）
+      const insertPos = currentReviewIndex + 1;
+      reviewOrder.splice(insertPos, 0, 0);
+      // currentReviewIndex 不变，保持当前正在复习的词
+      renderReviewCard();
+      saveReviewProgress();
+    }
+
     closeWordModal();
   } catch (e) {
     showToast('保存失败：' + e.message);
@@ -289,13 +303,23 @@ function initReview() {
   if (allWords.length === 0) {
     reviewOrder = [];
     currentReviewIndex = 0;
+    isRandomOrder = false;
     renderReviewCard();
     return;
   }
 
-  // 初始化复习顺序
-  reviewOrder = Array.from({ length: allWords.length }, (_, i) => i);
-  currentReviewIndex = 0;
+  // 尝试加载保存的进度
+  const saved = loadReviewProgress();
+  if (saved && saved.reviewOrder && saved.reviewOrder.length > 0) {
+    reviewOrder = saved.reviewOrder;
+    currentReviewIndex = Math.min(saved.currentReviewIndex, reviewOrder.length - 1);
+    isRandomOrder = saved.isRandomOrder || false;
+  } else {
+    reviewOrder = Array.from({ length: allWords.length }, (_, i) => i);
+    currentReviewIndex = 0;
+    isRandomOrder = false;
+  }
+
   renderReviewCard();
 }
 
@@ -308,12 +332,14 @@ function nextCard() {
   if (reviewOrder.length === 0) return;
   currentReviewIndex = (currentReviewIndex + 1) % reviewOrder.length;
   renderReviewCard();
+  saveReviewProgress();
 }
 
 function prevCard() {
   if (reviewOrder.length === 0) return;
   currentReviewIndex = (currentReviewIndex - 1 + reviewOrder.length) % reviewOrder.length;
   renderReviewCard();
+  saveReviewProgress();
 }
 
 function shuffleCards() {
@@ -334,6 +360,7 @@ function shuffleCards() {
   currentReviewIndex = 0;
   renderReviewCard();
   showToast(isRandomOrder ? '已随机排序' : '已恢复顺序');
+  saveReviewProgress();
 }
 
 // ===== 批量导入 =====
@@ -653,7 +680,15 @@ function initTheme() {
 function setTheme(theme) {
   applyTheme(theme);
   localStorage.setItem(THEME_KEY, theme);
-  showToast(theme === '' ? '已切换为明亮主题' : theme === 'dark' ? '已切换为暗黑主题' : '已切换为浅紫主题');
+  const themeNames = {
+    '': '明亮',
+    'dark': '暗黑',
+    'light-purple': '浅紫',
+    'light-yellow': '暖黄',
+    'sakura-pink': '樱粉',
+    'matcha-green': '抹茶'
+  };
+  showToast(`已切换为${themeNames[theme] || '默认'}主题`);
 }
 
 function applyTheme(theme) {
@@ -665,8 +700,16 @@ function applyTheme(theme) {
   }
   // 更新 manifest theme-color
   const metaTheme = document.querySelector('meta[name="theme-color"]');
+  const themeColors = {
+    '': '#4F46E5',
+    'dark': '#0F172A',
+    'light-purple': '#FAF5FF',
+    'light-yellow': '#FFFBEB',
+    'sakura-pink': '#FDF2F8',
+    'matcha-green': '#F7FEE7'
+  };
   if (metaTheme) {
-    metaTheme.content = theme === 'dark' ? '#0F172A' : theme === 'light-purple' ? '#FAF5FF' : '#4F46E5';
+    metaTheme.content = themeColors[theme] || '#4F46E5';
   }
   // 更新激活状态
   document.querySelectorAll('.theme-option').forEach(btn => {

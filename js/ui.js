@@ -11,6 +11,7 @@ let reviewOrder = []; // 复习顺序的索引数组
 let isRandomOrder = false;
 let pendingImportWords = [];
 let toastTimeout = null;
+const REVIEW_PROGRESS_KEY = 'wordbook_review_progress';
 
 // ===== Toast 提示 =====
 function showToast(message, duration = 2500) {
@@ -140,6 +141,37 @@ function renderTagFilter() {
   container.innerHTML = html;
 }
 
+// ===== 复习进度保存/加载 =====
+function saveReviewProgress() {
+  if (reviewOrder.length === 0) return;
+  const progress = {
+    currentReviewIndex,
+    reviewOrder,
+    isRandomOrder,
+    totalWords: allWords.length,
+    timestamp: Date.now()
+  };
+  localStorage.setItem(REVIEW_PROGRESS_KEY, JSON.stringify(progress));
+}
+
+function loadReviewProgress() {
+  try {
+    const saved = localStorage.getItem(REVIEW_PROGRESS_KEY);
+    if (!saved) return null;
+    const progress = JSON.parse(saved);
+    if (progress.totalWords !== allWords.length) {
+      return null;
+    }
+    return progress;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearReviewProgress() {
+  localStorage.removeItem(REVIEW_PROGRESS_KEY);
+}
+
 // ===== 渲染复习卡片 =====
 function renderReviewCard() {
   if (reviewOrder.length === 0) {
@@ -171,6 +203,13 @@ function renderReviewCard() {
 
 // ===== 标签页切换 =====
 function switchTab(tab) {
+  // 检查是否离开复习模式，保存进度
+  const reviewPage = document.getElementById('review-page');
+  const wasReview = !reviewPage.classList.contains('hidden');
+  if (wasReview && tab !== 'review') {
+    saveReviewProgress();
+  }
+
   // 更新导航状态
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);

@@ -69,6 +69,60 @@
   --shadow-xl: 0 20px 40px rgba(124,58,237,0.2);
 }
 
+/* ===== Light Yellow Theme ===== */
+[data-theme="light-yellow"] {
+  --primary: #D97706;
+  --primary-dark: #B45309;
+  --primary-light: #FBBF24;
+  --bg: #FFFBEB;
+  --surface: #FFFFFF;
+  --surface-hover: #FEF3C7;
+  --border: #FDE68A;
+  --text: #78350F;
+  --text-secondary: #B45309;
+  --text-muted: #D97706;
+  --shadow-sm: 0 1px 2px rgba(217,119,6,0.08);
+  --shadow: 0 1px 3px rgba(217,119,6,0.1), 0 1px 2px rgba(217,119,6,0.06);
+  --shadow-lg: 0 10px 25px rgba(217,119,6,0.15);
+  --shadow-xl: 0 20px 40px rgba(217,119,6,0.2);
+}
+
+/* ===== Sakura Pink Theme ===== */
+[data-theme="sakura-pink"] {
+  --primary: #DB2777;
+  --primary-dark: #BE185D;
+  --primary-light: #F472B6;
+  --bg: #FDF2F8;
+  --surface: #FFFFFF;
+  --surface-hover: #FCE7F3;
+  --border: #FBCFE8;
+  --text: #831843;
+  --text-secondary: #BE185D;
+  --text-muted: #DB2777;
+  --shadow-sm: 0 1px 2px rgba(219,39,119,0.08);
+  --shadow: 0 1px 3px rgba(219,39,119,0.1), 0 1px 2px rgba(219,39,119,0.06);
+  --shadow-lg: 0 10px 25px rgba(219,39,119,0.15);
+  --shadow-xl: 0 20px 40px rgba(219,39,119,0.2);
+}
+
+/* ===== Matcha Green Theme ===== */
+[data-theme="matcha-green"] {
+  --primary: #4D7C0F;
+  --primary-dark: #365314;
+  --primary-light: #84CC16;
+  --bg: #F7FEE7;
+  --surface: #FFFFFF;
+  --surface-hover: #ECFCCB;
+  --border: #D9F99D;
+  --text: #1A2E05;
+  --text-secondary: #4D7C0F;
+  --text-muted: #65A30D;
+  --shadow-sm: 0 1px 2px rgba(77,124,15,0.08);
+  --shadow: 0 1px 3px rgba(77,124,15,0.1), 0 1px 2px rgba(77,124,15,0.06);
+  --shadow-lg: 0 10px 25px rgba(77,124,15,0.15);
+  --shadow-xl: 0 20px 40px rgba(77,124,15,0.2);
+}
+
 /* ===== Reset & Base ===== */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -1191,6 +1245,18 @@ textarea {
   background: rgba(124, 58, 237, 0.08);
 }
 
+[data-theme="light-yellow"] .theme-option.active {
+  background: rgba(217, 119, 6, 0.08);
+}
+
+[data-theme="sakura-pink"] .theme-option.active {
+  background: rgba(219, 39, 119, 0.08);
+}
+
+[data-theme="matcha-green"] .theme-option.active {
+  background: rgba(77, 124, 15, 0.08);
+}
+
 .theme-preview {
   width: 40px;
   height: 40px;
@@ -1208,6 +1274,18 @@ textarea {
 
 .purple-preview {
   background: linear-gradient(135deg, #FAF5FF 50%, #F3E8FF 50%);
+}
+
+.yellow-preview {
+  background: linear-gradient(135deg, #FFFBEB 50%, #FEF3C7 50%);
+}
+
+.pink-preview {
+  background: linear-gradient(135deg, #FDF2F8 50%, #FCE7F3 50%);
+}
+
+.green-preview {
+  background: linear-gradient(135deg, #F7FEE7 50%, #ECFCCB 50%);
 }
 
 .speak-btn {
@@ -1373,6 +1451,155 @@ textarea {
     page-break-inside: avoid;
     break-inside: avoid;
   }
+}
+
+/* ===== Floating Decorations ===== */
+.floating-decorations {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.deco {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  color: var(--primary);
+}
+
+/* 浅黄色 - 小鸭装饰 */
+.deco-duck-1 {
+  top: 15%;
+  left: 8%;
+  width: 50px;
+  height: 50px;
+  animation: float 7s ease-in-out infinite;
+}
+.deco-duck-2 {
+  top: 60%;
+  right: 10%;
+  width: 40px;
+  height: 40px;
+  animation: float 9s ease-in-out infinite 1s;
+}
+.deco-duck-3 {
+  bottom: 25%;
+  left: 15%;
+  width: 35px;
+  height: 35px;
+  animation: float 8s ease-in-out infinite 2s;
+}
+
+[data-theme="light-yellow"] .deco-duck-1,
+[data-theme="light-yellow"] .deco-duck-2,
+[data-theme="light-yellow"] .deco-duck-3 {
+  opacity: 0.08;
+}
+
+/* 樱花粉 - 樱花装饰 */
+.deco-sakura-1 {
+  top: 12%;
+  right: 12%;
+  width: 45px;
+  height: 45px;
+  animation: float 6s ease-in-out infinite, sway 4s ease-in-out infinite;
+}
+.deco-sakura-2 {
+  top: 45%;
+  left: 6%;
+  width: 38px;
+  height: 38px;
+  animation: float 8s ease-in-out infinite 1.5s, sway 5s ease-in-out infinite 0.5s;
+}
+.deco-sakura-3 {
+  bottom: 20%;
+  right: 18%;
+  width: 32px;
+  height: 32px;
+  animation: float 7s ease-in-out infinite 0.5s, sway 3s ease-in-out infinite 1s;
+}
+
+[data-theme="sakura-pink"] .deco-sakura-1,
+[data-theme="sakura-pink"] .deco-sakura-2,
+[data-theme="sakura-pink"] .deco-sakura-3 {
+  opacity: 0.08;
+}
+
+/* 抹茶绿 - 小猫装饰 */
+.deco-cat-1 {
+  top: 18%;
+  right: 8%;
+  width: 48px;
+  height: 48px;
+  animation: float 7s ease-in-out infinite;
+}
+.deco-cat-2 {
+  bottom: 30%;
+  left: 10%;
+  width: 42px;
+  height: 42px;
+  animation: float 9s ease-in-out infinite 2s;
+}
+
+[data-theme="matcha-green"] .deco-cat-1,
+[data-theme="matcha-green"] .deco-cat-2 {
+  opacity: 0.08;
+}
+
+/* 浅紫色 - 薰衣草装饰 */
+.deco-lavender-1 {
+  top: 20%;
+  left: 5%;
+  width: 40px;
+  height: 55px;
+  animation: float 8s ease-in-out infinite;
+}
+.deco-lavender-2 {
+  bottom: 25%;
+  right: 8%;
+  width: 35px;
+  height: 48px;
+  animation: float 7s ease-in-out infinite 1.5s;
+}
+
+[data-theme="light-purple"] .deco-lavender-1,
+[data-theme="light-purple"] .deco-lavender-2 {
+  opacity: 0.08;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* ===== Review Mode FAB ===== */
+.fab-review {
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 80px);
+  right: 16px;
+  background: var(--success);
+}
+
+.fab-review:hover {
+  background: var(--success);
+  filter: brightness(1.1);
+}
+
+@media (min-width: 768px) {
+  .fab-review {
+    right: calc(50% - 260px + 16px);
+  }
+}
+
+/* ===== Theme Picker Wrap ===== */
+.theme-picker {
+  flex-wrap: wrap;
 }
 
 /* ===== Reduced Motion ===== */

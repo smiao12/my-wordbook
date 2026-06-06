@@ -32,6 +32,74 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- 主题装饰层 -->
+  <div class="floating-decorations">
+    <!-- 浅黄色 - 小鸭 -->
+    <svg class="deco deco-duck-1" viewBox="0 0 64 64" fill="none">
+      <ellipse cx="28" cy="38" rx="16" ry="12" fill="currentColor"/>
+      <circle cx="42" cy="28" r="10" fill="currentColor"/>
+      <ellipse cx="50" cy="26" rx="4" ry="2.5" fill="#F97316"/>
+      <circle cx="45" cy="24" r="1.2" fill="#78350F"/>
+    </svg>
+    <svg class="deco deco-duck-2" viewBox="0 0 64 64" fill="none">
+      <ellipse cx="28" cy="38" rx="14" ry="10" fill="currentColor"/>
+      <circle cx="40" cy="30" r="9" fill="currentColor"/>
+      <ellipse cx="47" cy="28" rx="3.5" ry="2" fill="#F97316"/>
+      <circle cx="43" cy="26" r="1" fill="#78350F"/>
+    </svg>
+    <svg class="deco deco-duck-3" viewBox="0 0 64 64" fill="none">
+      <ellipse cx="30" cy="40" rx="13" ry="10" fill="currentColor"/>
+      <circle cx="42" cy="30" r="8" fill="currentColor"/>
+      <ellipse cx="48" cy="28" rx="3" ry="2" fill="#F97316"/>
+      <circle cx="44" cy="27" r="1" fill="#78350F"/>
+    </svg>
+    <!-- 樱花粉 - 樱花 -->
+    <svg class="deco deco-sakura-1" viewBox="0 0 64 64" fill="none">
+      <path d="M32 10 C35 20 42 24 52 22 C48 30 50 38 56 44 C46 46 40 52 32 58 C24 52 18 46 8 44 C14 38 16 30 12 22 C22 24 29 20 32 10Z" fill="currentColor"/>
+      <circle cx="32" cy="34" r="3" fill="#FBCFE8"/>
+    </svg>
+    <svg class="deco deco-sakura-2" viewBox="0 0 64 64" fill="none">
+      <path d="M32 12 C34.5 20 40 24 46 22.5 C43 29 44.5 35.5 49 40.5 C42.5 42 37.5 47 32 52 C26.5 47 21.5 42 15 40.5 C19.5 35.5 21 29 18 22.5 C24 24 29.5 20 32 12Z" fill="currentColor"/>
+      <circle cx="32" cy="33" r="2.5" fill="#FBCFE8"/>
+    </svg>
+    <svg class="deco deco-sakura-3" viewBox="0 0 64 64" fill="none">
+      <path d="M32 14 C34 21 38.5 24.5 44 23 C41.5 28.5 42.5 34 46 38 C40.5 39.5 36 44 32 48 C28 44 23.5 39.5 18 38 C21.5 34 22.5 28.5 20 23 C25.5 24.5 30 21 32 14Z" fill="currentColor"/>
+      <circle cx="32" cy="31.5" r="2" fill="#FBCFE8"/>
+    </svg>
+    <!-- 抹茶绿 - 小猫 -->
+    <svg class="deco deco-cat-1" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="36" r="14" fill="currentColor"/>
+      <path d="M20 26 L23 14 L29 24Z" fill="currentColor"/>
+      <path d="M44 26 L41 14 L35 24Z" fill="currentColor"/>
+      <circle cx="26" cy="33" r="2" fill="#365314"/>
+      <circle cx="38" cy="33" r="2" fill="#365314"/>
+      <ellipse cx="32" cy="40" rx="2.5" ry="1.5" fill="#F472B6"/>
+    </svg>
+    <svg class="deco deco-cat-2" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="36" r="12" fill="currentColor"/>
+      <path d="M22 28 L24 18 L29 26Z" fill="currentColor"/>
+      <path d="M42 28 L40 18 L35 26Z" fill="currentColor"/>
+      <circle cx="27" cy="34" r="1.8" fill="#365314"/>
+      <circle cx="37" cy="34" r="1.8" fill="#365314"/>
+      <ellipse cx="32" cy="39" rx="2" ry="1.2" fill="#F472B6"/>
+    </svg>
+    <!-- 浅紫色 - 薰衣草 -->
+    <svg class="deco deco-lavender-1" viewBox="0 0 64 80" fill="none">
+      <rect x="30" y="35" width="4" height="40" rx="2" fill="currentColor"/>
+      <ellipse cx="32" cy="28" rx="7" ry="9" fill="currentColor"/>
+      <ellipse cx="25" cy="22" rx="5" ry="7" fill="currentColor"/>
+      <ellipse cx="39" cy="22" rx="5" ry="7" fill="currentColor"/>
+      <ellipse cx="32" cy="14" rx="4" ry="5" fill="currentColor"/>
+    </svg>
+    <svg class="deco deco-lavender-2" viewBox="0 0 64 80" fill="none">
+      <rect x="30" y="38" width="3" height="35" rx="1.5" fill="currentColor"/>
+      <ellipse cx="32" cy="31" rx="6" ry="8" fill="currentColor"/>
+      <ellipse cx="26" cy="26" rx="4.5" ry="6" fill="currentColor"/>
+      <ellipse cx="38" cy="26" rx="4.5" ry="6" fill="currentColor"/>
+      <ellipse cx="32" cy="18" rx="3.5" ry="4" fill="currentColor"/>
+    </svg>
+  </div>
+
   <!-- 登录页 -->
   <div id="auth-page" class="page auth-page">
     <div class="auth-container">
@@ -239,6 +307,14 @@
         </button>
       </div>
     </div>
+
+    <!-- 复习模式下添加新词按钮 -->
+    <button class="fab fab-review" onclick="showAddWordModal()" title="添加新词">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
   </div>
 
   <!-- 导入页面 -->
@@ -389,6 +465,18 @@ apple | 苹果&#10;banana"></textarea>
               <span class="theme-preview purple-preview"></span>
               <span class="theme-name">浅紫</span>
             </button>
+            <button class="theme-option" data-theme="light-yellow" onclick="setTheme('light-yellow')">
+              <span class="theme-preview yellow-preview"></span>
+              <span class="theme-name">暖黄</span>
+            </button>
+            <button class="theme-option" data-theme="sakura-pink" onclick="setTheme('sakura-pink')">
+              <span class="theme-preview pink-preview"></span>
+              <span class="theme-name">樱粉</span>
+            </button>
+            <button class="theme-option" data-theme="matcha-green" onclick="setTheme('matcha-green')">
+              <span class="theme-preview green-preview"></span>
+              <span class="theme-name">抹茶</span>
+            </button>
           </div>
         </div>
 
@@ -439,10 +527,10 @@ apple | 苹果&#10;banana"></textarea>
     </div>
   </div>
 
-  <script src="js/db.js?v=3"></script>
-  <script src="js/auth.js?v=3"></script>
-  <script src="js/ui.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/db.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/ui.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 
   <script>
     // Service Worker 注册
