@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordbook-v3';
+const CACHE_NAME = 'wordbook-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 立即激活，不等待旧 Service Worker 停止
+// 激活：清理旧缓存并立即接管
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -38,52 +38,22 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 激活：清理旧缓存
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => {
-      return self.clients.claim();
-    })
-  );
-});
-
-// 拦截请求
+// 拦截请求：静态资源用缓存，其他走网络
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
 
-  // Supabase API 请求：网络优先
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(
-      fetch(request).catch(() => {
-        return caches.match(request);
-      })
-    );
-    return;
-  }
-
-  // 静态资源：缓存优先
+  // 静态资源：网络优先，失败时回退缓存
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+    fetch(request).then((response) => {
+      if (response && response.status === 200 && response.type === 'basic') {
         const responseToCache = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(request, responseToCache);
         });
-        return response;
-      });
+      }
+      return response;
+    }).catch(() => {
+      return caches.match(request);
     })
   );
 });
