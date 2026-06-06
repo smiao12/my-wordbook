@@ -1,27 +1,25 @@
 # 我的单词本
 
-一个可以添加到手机/平板桌面的 PWA 单词记忆应用，支持查词、例句记录、复习和云端同步。
+一个可以添加到手机/平板桌面的 PWA 单词记忆应用，支持查词、例句记录、复习和导出。
 
 ## 功能
 
 - **PWA 安装** — 可添加到 Android / iPad 桌面，像原生 App 一样使用
 - **查词录入** — 输入英文单词，自动获取中文释义（支持音标）
+- **语音朗读** — 点击喇叭图标播放单词读音
 - **例句关联** — 记录查词时的原文句子，加深记忆
 - **单词列表** — 卡片式展示，支持搜索、标签筛选
-- **复习模式** — 卡片翻转复习，支持手势滑动切换，自动保存进度
-- **复习中添词** — 复习时遇到新词，可直接添加无需退出
+- **复习模式** — 卡片翻转复习，支持手势滑动切换
 - **批量导入** — 支持文本/JSON 格式批量导入已有单词
-- **云端同步** — 登录后单词自动同步到所有设备（可选）
-- **数据导出** — 随时导出 JSON 备份
-- **多彩主题** — 6 种主题可选，每种配有独特装饰图案
+- **数据导出** — 导出 PDF（打印为PDF）或 JSON 备份
+- **多彩主题** — 6 种主题可选
 
-## 快速开始（本地模式，无需配置）
+## 快速开始
 
-1. 用浏览器打开 `index.html`
-2. 点击「本地模式（无需登录）」
-3. 直接开始使用！
+1. 用浏览器打开网页
+2. 直接开始使用，无需登录！
 
-数据保存在浏览器 IndexedDB 中，清除浏览器数据会丢失。
+数据保存在浏览器本地（IndexedDB / localStorage），只要不手动清除浏览器数据就不会丢失。
 
 ## 添加到桌面
 
@@ -33,102 +31,14 @@
 1. 打开网页 → 点击分享按钮 →「添加到主屏幕」
 2. 确认添加
 
-## 云端同步配置（可选）
-
-### 1. 创建 Supabase 项目
-
-1. 访问 [supabase.com](https://supabase.com) 注册/登录
-2. 创建新项目，记录 **Project URL** 和 **anon public API key**
-3. 在 SQL Editor 中执行以下 SQL：
-
-```sql
--- 创建单词表
-CREATE TABLE words (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  word        TEXT NOT NULL,
-  meaning     TEXT NOT NULL,
-  example     TEXT,
-  phonetic    TEXT,
-  tags        TEXT[] DEFAULT '{}',
-  created_at  TIMESTAMPTZ DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 启用行级安全
-ALTER TABLE words ENABLE ROW LEVEL SECURITY;
-
--- 创建安全策略
-CREATE POLICY "Users can only access their own words"
-  ON words FOR ALL
-  USING (auth.uid() = user_id);
-```
-
-4. 开启 Email Auth：Authentication → Providers → Email → 启用
-
-### 2. 配置前端
-
-在浏览器控制台执行：
-
-```javascript
-localStorage.setItem('sb_url', 'https://your-project.supabase.co');
-localStorage.setItem('sb_key', 'your-anon-key');
-location.reload();
-```
-
-### 3. 部署翻译 Edge Function（可选，用于更稳定的查词）
-
-```bash
-# 安装 Supabase CLI
-npm install -g supabase
-
-# 登录
-supabase login
-
-# 链接项目
-supabase link --project-ref your-project-ref
-
-# 部署翻译函数
-supabase functions deploy translate
-
-# 配置环境变量（百度翻译 API）
-supabase secrets set BAIDU_APP_ID=your-app-id
-supabase secrets set BAIDU_SECRET_KEY=your-secret-key
-```
-
-百度翻译 API 申请：[https://fanyi-api.baidu.com](https://fanyi-api.baidu.com)
-
-### 4. 部署前端
-
-将项目文件上传到任意静态托管服务：
-
-- **Vercel**: `npm i -g vercel && vercel --prod`
-- **Netlify**: 拖拽文件夹到 [netlify.com](https://netlify.com)
-- **GitHub Pages**: 推送到仓库，开启 Pages
-- **腾讯云/阿里云 OSS**: 上传文件并开启静态网站
-
-## 主题切换
-
-设置中提供 6 种主题，每种配有专属漂浮装饰：
-
-| 主题 | 风格 | 装饰 |
-|------|------|------|
-| 明亮 | 简洁蓝白 | 无 |
-| 暗黑 | 深夜护眼 | 无 |
-| 浅紫 | 薰衣草紫 | 🪻 薰衣草花 |
-| 暖黄 | 温暖阳光 | 🐤 小鸭子 |
-| 樱粉 | 浪漫樱花 | 🌸 樱花瓣 |
-| 抹茶 | 清新自然 | 🐱 小猫咪 |
-
-## 复习模式
-
-- **卡片翻转**：点击卡片查看释义，再次点击翻回
-- **手势滑动**：左右滑动切换上一个/下一个单词
-- **进度保存**：退出复习模式后，再次进入会从上次位置继续
-- **随机排序**：点击「随机」按钮打乱复习顺序
-- **中途添词**：复习时遇到新词，点击绿色 + 按钮直接添加，新词会插入到当前位置之后
-
 ## 使用技巧
+
+### 查词录入
+1. 点击右下角 ➕ 按钮
+2. 输入英文单词
+3. 点击「查词」自动获取中文释义
+4. 补充例句（可选）
+5. 点击保存
 
 ### 批量导入格式
 
@@ -155,35 +65,76 @@ banana
 - `CET6` — 六级词汇
 - `2024-05` — 按时间分类
 
+### 导出备份
+
+**导出 PDF**：
+1. 进入设置 → 导出单词（PDF）
+2. 浏览器弹出打印对话框
+3. 目标打印机选择「另存为PDF」
+4. 保存
+
+**导出 JSON**：
+1. 进入设置 → 导出单词（JSON）
+2. 自动下载备份文件
+
 ## 技术栈
 
 - 前端：HTML5 + CSS3 + Vanilla JS（PWA）
-- 数据存储：IndexedDB（本地）/ Supabase（云端）
-- 翻译：MyMemory API（免费）/ 百度翻译 API（Edge Function）
+- 数据存储：IndexedDB（优先）/ localStorage（备选）
+- 翻译：MyMemory API（免费）/ Free Dictionary API（音标+英文释义）
+- 语音：Web Speech API（浏览器原生）
 
-## 免费额度
+## 主题
 
-| 服务 | 免费额度 | 说明 |
-|------|---------|------|
-| MyMemory 翻译 | 5000 字符/天 | 个人使用足够 |
-| Supabase 数据库 | 500MB | 个人单词本远小于此 |
-| Supabase Auth | 无限 MAU | 个人使用 |
+设置中提供 6 种主题：
 
-## 更新日志
+| 主题 | 风格 |
+|------|------|
+| 明亮 | 简洁蓝白 |
+| 暗黑 | 深夜护眼 |
+| 浅紫 | 薰衣草紫 |
+| 暖黄 | 温暖阳光 |
+| 樱粉 | 浪漫樱花 |
+| 抹茶 | 清新自然 |
 
-### v1.1（2025-06）
+## 数据说明
 
-- 新增 3 种主题：暖黄、樱粉、抹茶，每种配有可爱的漂浮装饰
-- 浅紫主题补充薰衣草装饰
-- 复习模式支持中途添加新词（绿色 + 按钮）
-- 复习进度自动保存，退出后再进入继续上次位置
+**所有数据保存在浏览器本地**，不会上传到任何服务器。
 
-### v1.0
+- IndexedDB：主要存储，容量大（约 50MB+）
+- localStorage：IndexedDB 不可用时自动降级
 
-- 初始版本：PWA 单词本，支持查词、复习、导入、云端同步
+**注意事项**：
+1. 清除浏览器数据会导致单词丢失，建议定期导出 JSON 备份
+2. 不同浏览器之间的数据不互通
+3. 隐身/隐私模式下数据可能无法持久保存
 
-## 注意事项
+## 部署
 
-1. **本地模式**数据存储在浏览器中，清除浏览器数据会丢失，建议定期导出备份
-2. **查词 API** 有免费额度限制，高峰期可能响应慢，可手动输入释义
-3. **PWA 离线**只能浏览已加载的单词，新增/编辑需要网络
+将项目文件上传到任意静态托管服务即可：
+
+- **Vercel**: `npm i -g vercel && vercel --prod`
+- **Netlify**: 拖拽文件夹到 [netlify.com](https://netlify.com)
+- **GitHub Pages**: 推送到仓库，开启 Pages
+- **腾讯云/阿里云 OSS**: 上传文件并开启静态网站
+
+## 项目结构
+
+```
+/
+├── index.html          # 主页面
+├── manifest.json       # PWA 配置
+├── sw.js               # Service Worker
+├── css/
+│   └── style.css       # 样式
+├── js/
+│   ├── db.js           # 数据层（IndexedDB + localStorage）
+│   ├── auth.js         # 简化版（仅本地模式）
+│   ├── ui.js           # UI 渲染
+│   └── app.js          # 主逻辑
+└── icons/              # PWA 图标
+```
+
+## License
+
+MIT
