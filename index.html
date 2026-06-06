@@ -10,26 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <script>
-    // 多 CDN 加载 Supabase，国内网络不稳定时自动切换
-    (function() {
-      var primary = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-      var fallback = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-      var script = document.createElement('script');
-      script.src = primary;
-      script.onerror = function() {
-        console.warn('[CDN] Primary failed, trying fallback');
-        var fb = document.createElement('script');
-        fb.src = fallback;
-        fb.onerror = function() {
-          console.error('[CDN] Both CDN sources failed');
-        };
-        document.head.appendChild(fb);
-      };
-      document.head.appendChild(script);
-    })();
-  </script>
-  <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <!-- 主题装饰层 -->
@@ -100,57 +81,8 @@
     </svg>
   </div>
 
-  <!-- 登录页 -->
-  <div id="auth-page" class="page auth-page">
-    <div class="auth-container">
-      <div class="auth-logo">
-        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-          <rect width="64" height="64" rx="16" fill="#4F46E5"/>
-          <text x="32" y="44" text-anchor="middle" fill="white" font-size="32" font-weight="bold">W</text>
-        </svg>
-        <h1>我的单词本</h1>
-        <p>记录做题中遇到的每一个生词</p>
-      </div>
-
-      <!-- 云端状态提示 -->
-      <div id="cloud-status" class="cloud-status"></div>
-
-      <!-- 登录表单 -->
-      <div id="login-form" class="auth-form">
-        <div class="form-group">
-          <label for="login-email">邮箱</label>
-          <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label for="login-password">密码</label>
-          <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password">
-        </div>
-        <button class="btn btn-primary btn-block" onclick="handleLogin()">登录</button>
-        <div class="auth-divider">
-          <span>或</span>
-        </div>
-        <button class="btn btn-outline btn-block" onclick="showRegister()">注册新账号</button>
-        <button class="btn btn-ghost btn-block" onclick="useLocalMode()">本地模式（无需登录）</button>
-      </div>
-
-      <!-- 注册表单 -->
-      <div id="register-form" class="auth-form hidden">
-        <div class="form-group">
-          <label for="register-email">邮箱</label>
-          <input type="email" id="register-email" placeholder="your@email.com" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label for="register-password">密码</label>
-          <input type="password" id="register-password" placeholder="至少6位密码" autocomplete="new-password">
-        </div>
-        <button class="btn btn-primary btn-block" onclick="handleRegister()">注册</button>
-        <button class="btn btn-ghost btn-block" onclick="showLogin()">已有账号？去登录</button>
-      </div>
-    </div>
-  </div>
-
   <!-- 主应用页 -->
-  <div id="app-page" class="page app-page hidden">
+  <div id="app-page" class="page app-page">
     <!-- 顶部导航 -->
     <header class="app-header">
       <h1>我的单词本</h1>
@@ -445,8 +377,7 @@ apple | 苹果&#10;banana"></textarea>
         <div class="settings-section">
           <h3>账号</h3>
           <div class="settings-item">
-            <span id="user-email">未登录</span>
-            <button class="btn btn-outline btn-sm" onclick="handleLogout()">退出登录</button>
+            <span id="user-email">本地模式</span>
           </div>
         </div>
 
@@ -527,10 +458,10 @@ apple | 苹果&#10;banana"></textarea>
     </div>
   </div>
 
-  <script src="js/db.js?v=4"></script>
-  <script src="js/auth.js?v=4"></script>
-  <script src="js/ui.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/db.js?v=5"></script>
+  <script src="js/auth.js?v=5"></script>
+  <script src="js/ui.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
 
   <script>
     // Service Worker 注册

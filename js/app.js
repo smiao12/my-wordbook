@@ -1,14 +1,12 @@
 /**
- * 主应用逻辑
+ * 主应用逻辑 — 纯本地模式
  */
 
-// 确保 db 存在（fallback，防止 db.js 加载失败）
+// 确保 db 存在（fallback）
 if (typeof db === 'undefined' || !db) {
   console.warn('db.js not loaded, creating fallback');
   var db = {
     _memory: [],
-    isLocal: () => true,
-    isMemory: () => true,
     async getAll() {
       return [...this._memory].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     },
@@ -43,13 +41,8 @@ if (typeof db === 'undefined' || !db) {
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
-  if (typeof initSupabase === 'function') initSupabase();
-  await initAuth();
-
-  // 如果未配置 Supabase 且未自动进入本地模式，显示登录页
-  if (!currentUser && _sbClient) {
-    showAuthPage();
-  }
+  showAppPage();
+  loadWords();
 
   // 绑定键盘事件
   document.addEventListener('keydown', (e) => {
@@ -131,24 +124,7 @@ async function lookupWord() {
 
   showLoading(true);
 
-  // 优先：尝试 Supabase Edge Function（如果配置了百度翻译）
-  if (_sbClient) {
-    try {
-      const { data, error } = await _sbClient.functions.invoke('translate', {
-        body: { word }
-      });
-      if (!error && data?.translation) {
-        meaningInput.value = data.translation;
-        showToast('查词完成');
-        showLoading(false);
-        return;
-      }
-    } catch (e) {
-      // Edge Function 不可用，继续降级
-    }
-  }
-
-  // 其次：MyMemory 翻译 API（免费，中英翻译）
+  // 首先：MyMemory 翻译 API（免费，中英翻译）
   try {
     const transResponse = await fetch(
       `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh`
@@ -167,7 +143,7 @@ async function lookupWord() {
     // MyMemory 失败，继续降级
   }
 
-  // 最后：Free Dictionary API（英文释义 + 音标）
+  // 其次：Free Dictionary API（英文释义 + 音标）
   try {
     const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
     if (response.ok) {
@@ -245,8 +221,7 @@ async function saveWord() {
         meaning,
         phonetic,
         example,
-        tags,
-        user_id: currentUser?.id || 'local'
+        tags
       };
       const saved = await db.add(newWord);
       allWords.unshift(saved);
@@ -480,7 +455,7 @@ async function confirmImport() {
         }
       }
 
-      wordToSave.user_id = currentUser?.id || 'local';
+      // 纯本地模式，不需要 user_id
 
       const saved = await db.add(wordToSave);
       allWords.unshift(saved);
