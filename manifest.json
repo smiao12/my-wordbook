@@ -1,10 +1,10 @@
 {
   "name": "我的单词本",
   "short_name": "单词本",
-  "description": "记录做题中遇到的生词，支持查词、例句和复习",
+  "description": "按考研年份整理真题生词，支持作文功能句整理",
   "start_url": "/",
   "display": "standalone",
-  "background_color":="#ffffff",
+  "background_color": "#ffffff",
   "theme_color": "#4F46E5",
   "orientation": "portrait",
   "icons": [

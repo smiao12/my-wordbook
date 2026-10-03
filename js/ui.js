@@ -1,17 +1,13 @@
 /**
- * UI 渲染模块
+ * UI 渲染模块 — v2 按考研年份分组
  */
 
 // 全局状态
 let allWords = [];
 let filteredWords = [];
-let allTags = new Set();
-let currentReviewIndex = 0;
-let reviewOrder = []; // 复习顺序的索引数组
-let isRandomOrder = false;
+let activeYear = ''; // 当前筛选的年份，'' 表示全部
 let pendingImportWords = [];
 let toastTimeout = null;
-const REVIEW_PROGRESS_KEY = 'wordbook_review_progress';
 
 // ===== Toast 提示 =====
 function showToast(message, duration = 2500) {
@@ -45,34 +41,81 @@ const escapeHtml = (() => {
   };
 })();
 
-// ===== 事件委托：单词卡片点击 =====
-document.addEventListener('click', (e) => {
-  // 编辑单词
-  const card = e.target.closest('.word-card');
-  if (card && !e.target.closest('.word-actions')) {
-    const id = card.dataset.id;
-    if (id) showEditWordModal(id);
-    return;
-  }
+// ===== 年份排序（数字降序，未分类最后） =====
+function sortYearValues(years) {
+  return years.sort((a, b) => {
+    if (a === '' && b !== '') return 1;
+    if (b === '' && a !== '') return -1;
+    const na = Number(a), nb = Number(b);
+    if (!isNaN(na) && !isNaN(nb)) return nb - na;
+    if (!isNaN(na)) return -1;
+    if (!isNaN(nb)) return 1;
+    return String(b).localeCompare(String(a));
+  });
+}
 
+// ===== 事件委托：点击处理 =====
+document.addEventListener('click', (e) => {
   // 删除单词
   const deleteBtn = e.target.closest('[data-action="delete"]');
   if (deleteBtn) {
+    e.stopPropagation();
     const id = deleteBtn.dataset.id;
     if (id) deleteWord(id);
     return;
   }
 
-  // 标签筛选
-  const tagBtn = e.target.closest('.tag-btn');
-  if (tagBtn) {
-    const tag = tagBtn.dataset.tag || '';
-    filterByTag(tag);
+  // 朗读按钮（单独处理，见 app.js 的 speak 委托）
+  if (e.target.closest('.speak-btn')) {
+    return;
+  }
+
+  // 编辑单词（点击行，排除删除按钮）
+  const row = e.target.closest('.word-row');
+  if (row) {
+    const id = row.dataset.id;
+    if (id) showEditWordModal(id);
+    return;
+  }
+
+  // 年份筛选
+  const yearBtn = e.target.closest('.tag-btn');
+  if (yearBtn) {
+    const year = yearBtn.dataset.year || '';
+    filterByYear(year);
     return;
   }
 });
 
-// ===== 渲染单词列表 =====
+// ===== 渲染单个单词行 =====
+function renderWordRow(word) {
+  return `
+    <div class="word-row" data-id="${escapeHtml(word.id)}">
+      <div class="word-row-main">
+        <div class="word-row-title">
+          <span class="word-text">${escapeHtml(word.word)}</span>
+          ${word.phonetic ? `<span class="word-phonetic">${escapeHtml(word.phonetic)}</span>` : ''}
+          <button class="speak-btn" data-speak="${escapeHtml(word.word)}" title="朗读">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 010 7.07"/>
+            </svg>
+          </button>
+        </div>
+        <button class="word-action-btn" data-action="delete" data-id="${escapeHtml(word.id)}" title="删除">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="word-meaning">${escapeHtml(word.meaning)}</div>
+      ${word.example ? `<div class="word-example">${escapeHtml(word.example)}</div>` : ''}
+    </div>
+  `;
+}
+
+// ===== 渲染单词列表（按年份分组） =====
 function renderWordList(words) {
   const container = document.getElementById('word-list');
   const emptyState = document.getElementById('empty-state');
@@ -90,126 +133,53 @@ function renderWordList(words) {
   container.classList.remove('hidden');
   emptyState.classList.add('hidden');
 
-  container.innerHTML = words.map(word => `
-    <div class="word-card" data-id="${escapeHtml(word.id)}">
-      <div class="word-card-header">
-        <div class="word-title">
-          <span class="word-text">${escapeHtml(word.word)}</span>
-          ${word.phonetic ? `<span class="word-phonetic">${escapeHtml(word.phonetic)}</span>` : ''}
-          <button class="speak-btn" data-speak="${escapeHtml(word.word)}" title="朗读">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-              <path d="M15.54 8.46a5 5 0 010 7.07"/>
-            </svg>
-          </button>
-        </div>
-        <div class="word-actions">
-          <button class="word-action-btn" data-action="delete" data-id="${escapeHtml(word.id)}" title="删除">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="word-meaning">${escapeHtml(word.meaning)}</div>
-      ${word.example ? `<div class="word-example">${escapeHtml(word.example)}</div>` : ''}
-      ${word.tags && word.tags.length > 0 ? `
-        <div class="word-tags">
-          ${word.tags.map(tag => `<span class="word-tag">${escapeHtml(tag)}</span>`).join('')}
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
-}
-
-// ===== 渲染标签筛选 =====
-function renderTagFilter() {
-  const container = document.getElementById('tag-filter');
-  allTags.clear();
-  allWords.forEach(word => {
-    if (word.tags) {
-      word.tags.forEach(tag => allTags.add(tag));
-    }
+  // 按年份分组
+  const groups = new Map();
+  words.forEach(word => {
+    const year = (word.year || '').trim();
+    if (!groups.has(year)) groups.set(year, []);
+    groups.get(year).push(word);
   });
 
-  const tags = Array.from(allTags).sort();
-  let html = `<button class="tag-btn active" data-tag="">全部</button>`;
-  tags.forEach(tag => {
-    html += `<button class="tag-btn" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+  const years = sortYearValues(Array.from(groups.keys()));
+  let html = '';
+  years.forEach(year => {
+    const yearWords = groups.get(year);
+    const label = year === '' ? '未分类' : year;
+    html += `<div class="year-group">`;
+    html += `<div class="year-group-header">`;
+    html += `<span class="year-group-title">${escapeHtml(label)}</span>`;
+    html += `<span class="year-group-count">${yearWords.length} 词</span>`;
+    html += `</div>`;
+    html += `<div class="year-group-words">`;
+    yearWords.forEach(word => {
+      html += renderWordRow(word);
+    });
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// ===== 渲染年份筛选 =====
+function renderYearFilter() {
+  const container = document.getElementById('year-filter');
+  const yearSet = new Set();
+  allWords.forEach(word => {
+    const y = (word.year || '').trim();
+    if (y !== '') yearSet.add(y);
+  });
+
+  const years = sortYearValues(Array.from(yearSet));
+  let html = `<button class="tag-btn ${activeYear === '' ? 'active' : ''}" data-year="" onclick="filterByYear('')">全部</button>`;
+  years.forEach(year => {
+    html += `<button class="tag-btn ${activeYear === year ? 'active' : ''}" data-year="${escapeHtml(year)}" onclick="filterByYear('${escapeHtml(year)}')">${escapeHtml(year)}</button>`;
   });
   container.innerHTML = html;
 }
 
-// ===== 复习进度保存/加载 =====
-function saveReviewProgress() {
-  if (reviewOrder.length === 0) return;
-  const progress = {
-    currentReviewIndex,
-    reviewOrder,
-    isRandomOrder,
-    totalWords: allWords.length,
-    timestamp: Date.now()
-  };
-  localStorage.setItem(REVIEW_PROGRESS_KEY, JSON.stringify(progress));
-}
-
-function loadReviewProgress() {
-  try {
-    const saved = localStorage.getItem(REVIEW_PROGRESS_KEY);
-    if (!saved) return null;
-    const progress = JSON.parse(saved);
-    if (progress.totalWords !== allWords.length) {
-      return null;
-    }
-    return progress;
-  } catch (e) {
-    return null;
-  }
-}
-
-function clearReviewProgress() {
-  localStorage.removeItem(REVIEW_PROGRESS_KEY);
-}
-
-// ===== 渲染复习卡片 =====
-function renderReviewCard() {
-  if (reviewOrder.length === 0) {
-    document.getElementById('review-word').textContent = '暂无单词';
-    document.getElementById('review-phonetic').textContent = '';
-    document.getElementById('review-meaning').textContent = '先去添加一些单词吧';
-    document.getElementById('review-example').textContent = '';
-    document.getElementById('review-current').textContent = '0';
-    document.getElementById('review-total').textContent = '0';
-    return;
-  }
-
-  const wordIndex = reviewOrder[currentReviewIndex];
-  const word = allWords[wordIndex];
-
-  if (!word) return;
-
-  const reviewWordEl = document.getElementById('review-word');
-  if (reviewWordEl) reviewWordEl.textContent = word.word;
-  document.getElementById('review-phonetic').textContent = word.phonetic || '';
-  document.getElementById('review-meaning').textContent = word.meaning;
-  document.getElementById('review-example').textContent = word.example || '';
-  document.getElementById('review-current').textContent = currentReviewIndex + 1;
-  document.getElementById('review-total').textContent = reviewOrder.length;
-
-  // 重置翻转状态
-  document.getElementById('review-card').classList.remove('flipped');
-}
-
 // ===== 标签页切换 =====
 function switchTab(tab) {
-  // 检查是否离开复习模式，保存进度
-  const reviewPage = document.getElementById('review-page');
-  const wasReview = !reviewPage.classList.contains('hidden');
-  if (wasReview && tab !== 'review') {
-    saveReviewProgress();
-  }
-
   // 更新导航状态
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
@@ -217,17 +187,16 @@ function switchTab(tab) {
 
   // 隐藏所有页面
   document.getElementById('app-page').classList.add('hidden');
-  document.getElementById('review-page').classList.add('hidden');
   document.getElementById('import-page').classList.add('hidden');
+  document.getElementById('writing-page').classList.add('hidden');
 
   // 显示对应页面
   if (tab === 'list') {
     document.getElementById('app-page').classList.remove('hidden');
-  } else if (tab === 'review') {
-    document.getElementById('review-page').classList.remove('hidden');
-    initReview();
   } else if (tab === 'import') {
     document.getElementById('import-page').classList.remove('hidden');
+  } else if (tab === 'writing') {
+    document.getElementById('writing-page').classList.remove('hidden');
   }
 }
 
@@ -238,15 +207,13 @@ function showAddWordModal() {
   document.getElementById('word-input').value = '';
   document.getElementById('meaning-input').value = '';
   document.getElementById('phonetic-input').value = '';
+  document.getElementById('year-input').value = activeYear || '';
   document.getElementById('example-input').value = '';
-  document.getElementById('tags-input').value = '';
-  document.getElementById('word-input').disabled = false;
-  document.getElementById('lookup-btn').style.display = '';
   document.getElementById('word-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('word-input').focus(), 100);
 }
 
-async function showEditWordModal(id) {
+function showEditWordModal(id) {
   const word = allWords.find(w => w.id === id);
   if (!word) return;
 
@@ -255,10 +222,8 @@ async function showEditWordModal(id) {
   document.getElementById('word-input').value = word.word;
   document.getElementById('meaning-input').value = word.meaning || '';
   document.getElementById('phonetic-input').value = word.phonetic || '';
+  document.getElementById('year-input').value = word.year || '';
   document.getElementById('example-input').value = word.example || '';
-  document.getElementById('tags-input').value = (word.tags || []).join(', ');
-  document.getElementById('word-input').disabled = true;
-  document.getElementById('lookup-btn').style.display = 'none';
   document.getElementById('word-modal').classList.remove('hidden');
 }
 
@@ -267,7 +232,7 @@ function closeWordModal() {
 }
 
 function showSettings() {
-  updateUserDisplay();
+  updateAccountUI();
   document.getElementById('settings-modal').classList.remove('hidden');
 }
 

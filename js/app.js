@@ -1,5 +1,5 @@
 /**
- * 主应用逻辑 — 纯本地模式
+ * 主应用逻辑 — 纯本地模式，按考研年份整理
  */
 
 // 确保 db 存在（fallback）
@@ -42,15 +42,24 @@ if (typeof db === 'undefined' || !db) {
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   showAppPage();
-  loadWords();
 
   // 绑定键盘事件
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeWordModal();
       closeSettings();
+      closeAuthModal();
     }
   });
+
+  // 尝试恢复登录会话（已登录则同步云端，否则本地模式）
+  const user = await restoreSession();
+  if (user) {
+    await syncAfterLogin();
+  } else {
+    loadWords();
+    updateAccountUI();
+  }
 });
 
 // ===== 加载单词 =====
@@ -59,7 +68,7 @@ async function loadWords() {
   try {
     allWords = await db.getAll();
     filteredWords = [...allWords];
-    renderTagFilter();
+    renderYearFilter();
     renderWordList(filteredWords);
   } catch (e) {
     showToast('加载失败：' + e.message);
@@ -68,120 +77,36 @@ async function loadWords() {
   }
 }
 
+// ===== 统一筛选（年份 + 搜索） =====
+function applyFilters() {
+  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  filteredWords = allWords.filter(word => {
+    if (activeYear !== '') {
+      const y = (word.year || '').trim();
+      if (y !== activeYear) return false;
+    }
+    if (query) {
+      return (word.word && word.word.toLowerCase().includes(query)) ||
+        (word.meaning && word.meaning.toLowerCase().includes(query)) ||
+        (word.example && word.example.toLowerCase().includes(query));
+    }
+    return true;
+  });
+  renderWordList(filteredWords);
+}
+
 // ===== 搜索 =====
 function handleSearch() {
-  const query = document.getElementById('search-input').value.trim().toLowerCase();
-  if (!query) {
-    filteredWords = [...allWords];
-  } else {
-    filteredWords = allWords.filter(word =>
-      (word.word && word.word.toLowerCase().includes(query)) ||
-      (word.meaning && word.meaning.toLowerCase().includes(query)) ||
-      (word.example && word.example.toLowerCase().includes(query))
-    );
-  }
-  renderWordList(filteredWords);
+  applyFilters();
 }
 
-// ===== 标签筛选 =====
-function filterByTag(tag) {
+// ===== 年份筛选 =====
+function filterByYear(year) {
+  activeYear = year;
   document.querySelectorAll('.tag-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tag === tag);
+    btn.classList.toggle('active', (btn.dataset.year || '') === year);
   });
-
-  if (!tag) {
-    filteredWords = [...allWords];
-  } else {
-    filteredWords = allWords.filter(word =>
-      word.tags && word.tags.includes(tag)
-    );
-  }
-
-  // 同时应用搜索筛选
-  const query = document.getElementById('search-input').value.trim().toLowerCase();
-  if (query) {
-    filteredWords = filteredWords.filter(word =>
-      (word.word && word.word.toLowerCase().includes(query)) ||
-      (word.meaning && word.meaning.toLowerCase().includes(query)) ||
-      (word.example && word.example.toLowerCase().includes(query))
-    );
-  }
-
-  renderWordList(filteredWords);
-}
-
-// ===== 查词 =====
-async function lookupWord() {
-  const wordInput = document.getElementById('word-input');
-  const meaningInput = document.getElementById('meaning-input');
-  const phoneticInput = document.getElementById('phonetic-input');
-  const word = wordInput.value.trim();
-
-  if (!word) {
-    showToast('请输入英文单词');
-    return;
-  }
-
-  showLoading(true);
-
-  // 首先：MyMemory 翻译 API（免费，中英翻译）
-  try {
-    const transResponse = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh`
-    );
-    const transData = await transResponse.json();
-    if (transData.responseStatus === 200 && transData.responseData) {
-      const translation = transData.responseData.translatedText;
-      if (translation && translation.toLowerCase() !== word.toLowerCase()) {
-        meaningInput.value = translation;
-        showToast('查词完成');
-        showLoading(false);
-        return;
-      }
-    }
-  } catch (e) {
-    // MyMemory 失败，继续降级
-  }
-
-  // 其次：Free Dictionary API（英文释义 + 音标）
-  try {
-    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (response.ok) {
-      const data = await response.json();
-      const entry = data[0];
-
-      // 提取音标
-      if (entry.phonetic) {
-        phoneticInput.value = entry.phonetic;
-      } else if (entry.phonetics && entry.phonetics[0]) {
-        phoneticInput.value = entry.phonetics[0].text || '';
-      }
-
-      // 提取英文释义
-      const meanings = [];
-      if (entry.meanings) {
-        entry.meanings.forEach(m => {
-          if (m.definitions) {
-            m.definitions.slice(0, 2).forEach(d => {
-              meanings.push(d.definition);
-            });
-          }
-        });
-      }
-
-      if (!meaningInput.value && meanings.length > 0) {
-        meaningInput.value = meanings.slice(0, 3).join('; ');
-      }
-
-      showToast('查词完成（英文释义），请补充中文释义');
-    } else {
-      showToast('查词失败，请手动输入释义');
-    }
-  } catch (e) {
-    showToast('查词失败，请手动输入释义');
-  } finally {
-    showLoading(false);
-  }
+  applyFilters();
 }
 
 // ===== 保存单词 =====
@@ -190,8 +115,8 @@ async function saveWord() {
   const word = document.getElementById('word-input').value.trim();
   const meaning = document.getElementById('meaning-input').value.trim();
   const phonetic = document.getElementById('phonetic-input').value.trim();
+  const year = document.getElementById('year-input').value.trim();
   const example = document.getElementById('example-input').value.trim();
-  const tagsStr = document.getElementById('tags-input').value.trim();
 
   if (!word) {
     showToast('请输入英文单词');
@@ -202,52 +127,25 @@ async function saveWord() {
     return;
   }
 
-  const tags = tagsStr ? tagsStr.split(/[,，]/).map(t => t.trim()).filter(Boolean) : [];
-
   showLoading(true);
   try {
     if (id) {
       // 编辑
-      await db.update(id, { word, meaning, phonetic, example, tags });
+      await db.update(id, { word, meaning, phonetic, example, year });
       const idx = allWords.findIndex(w => w.id === id);
       if (idx >= 0) {
-        allWords[idx] = { ...allWords[idx], word, meaning, phonetic, example, tags };
+        allWords[idx] = { ...allWords[idx], word, meaning, phonetic, example, year };
       }
       showToast('单词已更新');
     } else {
       // 新增
-      const newWord = {
-        word,
-        meaning,
-        phonetic,
-        example,
-        tags
-      };
-      const saved = await db.add(newWord);
+      const saved = await db.add({ word, meaning, phonetic, example, year });
       allWords.unshift(saved);
       showToast('单词已保存');
     }
 
-    // 更新标签
-    tags.forEach(tag => allTags.add(tag));
-
-    // 重新渲染
-    handleSearch();
-    renderTagFilter();
-
-    // 如果在复习模式，将新词加入复习队列
-    const reviewPage = document.getElementById('review-page');
-    if (!reviewPage.classList.contains('hidden') && reviewOrder.length > 0) {
-      // 旧索引映射到新 allWords（新词在 allWords[0]，其他索引+1）
-      reviewOrder = reviewOrder.map(idx => idx + 1);
-      // 在当前位置之后插入新词（索引 0）
-      const insertPos = currentReviewIndex + 1;
-      reviewOrder.splice(insertPos, 0, 0);
-      // currentReviewIndex 不变，保持当前正在复习的词
-      renderReviewCard();
-      saveReviewProgress();
-    }
-
+    applyFilters();
+    renderYearFilter();
     closeWordModal();
   } catch (e) {
     showToast('保存失败：' + e.message);
@@ -264,78 +162,14 @@ async function deleteWord(id) {
   try {
     await db.delete(id);
     allWords = allWords.filter(w => w.id !== id);
-    handleSearch();
+    applyFilters();
+    renderYearFilter();
     showToast('已删除');
   } catch (e) {
     showToast('删除失败：' + e.message);
   } finally {
     showLoading(false);
   }
-}
-
-// ===== 复习模式 =====
-function initReview() {
-  if (allWords.length === 0) {
-    reviewOrder = [];
-    currentReviewIndex = 0;
-    isRandomOrder = false;
-    renderReviewCard();
-    return;
-  }
-
-  // 尝试加载保存的进度
-  const saved = loadReviewProgress();
-  if (saved && saved.reviewOrder && saved.reviewOrder.length > 0) {
-    reviewOrder = saved.reviewOrder;
-    currentReviewIndex = Math.min(saved.currentReviewIndex, reviewOrder.length - 1);
-    isRandomOrder = saved.isRandomOrder || false;
-  } else {
-    reviewOrder = Array.from({ length: allWords.length }, (_, i) => i);
-    currentReviewIndex = 0;
-    isRandomOrder = false;
-  }
-
-  renderReviewCard();
-}
-
-function flipCard() {
-  const card = document.getElementById('review-card');
-  card.classList.toggle('flipped');
-}
-
-function nextCard() {
-  if (reviewOrder.length === 0) return;
-  currentReviewIndex = (currentReviewIndex + 1) % reviewOrder.length;
-  renderReviewCard();
-  saveReviewProgress();
-}
-
-function prevCard() {
-  if (reviewOrder.length === 0) return;
-  currentReviewIndex = (currentReviewIndex - 1 + reviewOrder.length) % reviewOrder.length;
-  renderReviewCard();
-  saveReviewProgress();
-}
-
-function shuffleCards() {
-  if (reviewOrder.length <= 1) return;
-  isRandomOrder = !isRandomOrder;
-
-  if (isRandomOrder) {
-    // Fisher-Yates 洗牌
-    for (let i = reviewOrder.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [reviewOrder[i], reviewOrder[j]] = [reviewOrder[j], reviewOrder[i]];
-    }
-  } else {
-    // 恢复原始顺序
-    reviewOrder.sort((a, b) => a - b);
-  }
-
-  currentReviewIndex = 0;
-  renderReviewCard();
-  showToast(isRandomOrder ? '已随机排序' : '已恢复顺序');
-  saveReviewProgress();
 }
 
 // ===== 批量导入 =====
@@ -356,8 +190,7 @@ function previewImport() {
         word: parts[0],
         meaning: parts[1] || '',
         example: parts[2] || '',
-        phonetic: '',
-        tags: []
+        phonetic: ''
       });
     }
   }
@@ -383,8 +216,7 @@ function previewImportJson() {
       word: item.word || '',
       meaning: item.meaning || '',
       example: item.example || '',
-      phonetic: item.phonetic || '',
-      tags: item.tags || []
+      phonetic: item.phonetic || ''
     })).filter(item => item.word);
 
     renderImportPreview();
@@ -407,7 +239,7 @@ function renderImportPreview() {
   list.innerHTML = pendingImportWords.map((w, i) => `
     <div class="import-preview-item">
       <div class="import-preview-word">${i + 1}. ${escapeHtml(w.word)}</div>
-      ${w.meaning ? `<div class="import-preview-meaning">${escapeHtml(w.meaning)}</div>` : '<div class="import-preview-meaning" style="color:var(--text-muted)">（无释义，将自动查词）</div>'}
+      ${w.meaning ? `<div class="import-preview-meaning">${escapeHtml(w.meaning)}</div>` : '<div class="import-preview-meaning" style="color:var(--text-muted)">（无释义）</div>'}
       ${w.example ? `<div class="import-preview-example">${escapeHtml(w.example)}</div>` : ''}
     </div>
   `).join('');
@@ -423,67 +255,40 @@ function cancelImport() {
 async function confirmImport() {
   if (pendingImportWords.length === 0) return;
 
+  const importYear = document.getElementById('import-year').value.trim();
+
   showLoading(true);
   let successCount = 0;
   let failCount = 0;
 
   for (const wordData of pendingImportWords) {
     try {
-      const wordToSave = { ...wordData };
-
-      // 如果没有释义，尝试查词
+      const wordToSave = { ...wordData, year: importYear };
       if (!wordToSave.meaning) {
-        let translated = false;
-
-        // 先尝试 MyMemory
-        try {
-          const response = await fetch(
-            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(wordToSave.word)}&langpair=en|zh`
-          );
-          const data = await response.json();
-          if (data.responseStatus === 200 && data.responseData) {
-            const text = data.responseData.translatedText;
-            if (text && text.toLowerCase() !== wordToSave.word.toLowerCase()) {
-              wordToSave.meaning = text;
-              translated = true;
-            }
-          }
-        } catch (e) { /* ignore */ }
-
-        if (!translated) {
-          wordToSave.meaning = '（请手动补充释义）';
-        }
+        wordToSave.meaning = '（暂无释义）';
       }
-
-      // 纯本地模式，不需要 user_id
 
       const saved = await db.add(wordToSave);
       allWords.unshift(saved);
       successCount++;
-
-      // 更新标签集合
-      if (wordToSave.tags) {
-        wordToSave.tags.forEach(tag => allTags.add(tag));
-      }
     } catch (e) {
       failCount++;
       console.error('Import failed for word:', wordData.word, e);
     }
   }
 
-  // 重新渲染
-  handleSearch();
-  renderTagFilter();
+  applyFilters();
+  renderYearFilter();
 
   document.getElementById('import-preview').classList.add('hidden');
   document.getElementById('import-text').value = '';
   document.getElementById('import-json').value = '';
+  document.getElementById('import-year').value = '';
   pendingImportWords = [];
 
   showLoading(false);
   showToast(`导入完成：成功 ${successCount} 条，失败 ${failCount} 条`);
 
-  // 切换回单词列表
   switchTab('list');
 }
 
@@ -521,30 +326,42 @@ async function exportWordsPDF() {
     const wordsContainer = document.getElementById('pdf-words');
     const dateEl = container.querySelector('.pdf-date');
 
-    // 设置日期
     dateEl.textContent = `导出日期：${new Date().toLocaleDateString('zh-CN')}  共 ${words.length} 个单词`;
 
-    // 生成单词列表
-    wordsContainer.innerHTML = words.map((w, i) => `
-      <div class="pdf-word-item">
-        <div class="pdf-word">${i + 1}. ${escapeHtml(w.word)}</div>
-        ${w.phonetic ? `<div class="pdf-phonetic">${escapeHtml(w.phonetic)}</div>` : ''}
-        <div class="pdf-meaning">${escapeHtml(w.meaning)}</div>
-        ${w.example ? `<div class="pdf-example">${escapeHtml(w.example)}</div>` : ''}
-        ${w.tags && w.tags.length ? `<div class="pdf-tags">${w.tags.map(t => `<span class="pdf-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-      </div>
-    `).join('');
+    // 按年份分组
+    const groups = new Map();
+    words.forEach(w => {
+      const year = (w.year || '').trim();
+      if (!groups.has(year)) groups.set(year, []);
+      groups.get(year).push(w);
+    });
+    const years = sortYearValues(Array.from(groups.keys()));
 
-    // 显示打印容器
+    let html = '';
+    let num = 0;
+    years.forEach(year => {
+      const yearWords = groups.get(year);
+      const label = year === '' ? '未分类' : year;
+      html += `<div class="pdf-year-header">${escapeHtml(label)}</div>`;
+      yearWords.forEach(w => {
+        num++;
+        html += `
+          <div class="pdf-word-item">
+            <div class="pdf-word">${num}. ${escapeHtml(w.word)}</div>
+            ${w.phonetic ? `<div class="pdf-phonetic">${escapeHtml(w.phonetic)}</div>` : ''}
+            <div class="pdf-meaning">${escapeHtml(w.meaning)}</div>
+            ${w.example ? `<div class="pdf-example">${escapeHtml(w.example)}</div>` : ''}
+          </div>
+        `;
+      });
+    });
+    wordsContainer.innerHTML = html;
+
     container.classList.remove('hidden');
-
-    // 关闭设置弹窗
     closeSettings();
 
-    // 延迟执行打印，让浏览器渲染完成
     setTimeout(() => {
       window.print();
-      // 打印完成后隐藏
       setTimeout(() => {
         container.classList.add('hidden');
       }, 500);
@@ -566,9 +383,9 @@ async function clearAllWords() {
     await db.clear();
     allWords = [];
     filteredWords = [];
-    allTags.clear();
+    activeYear = '';
     renderWordList(filteredWords);
-    renderTagFilter();
+    renderYearFilter();
     showToast('已清空所有单词');
   } catch (e) {
     showToast('清空失败：' + e.message);
@@ -584,21 +401,11 @@ function speakWord(word) {
     showToast('您的浏览器不支持语音朗读');
     return;
   }
-  // 取消之前的朗读
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(word);
   utterance.lang = 'en-US';
   utterance.rate = 0.9;
   window.speechSynthesis.speak(utterance);
-}
-
-function speakCurrentWord() {
-  if (reviewOrder.length === 0) return;
-  const wordIndex = reviewOrder[currentReviewIndex];
-  const word = allWords[wordIndex];
-  if (word) {
-    speakWord(word.word);
-  }
 }
 
 // 事件委托：朗读按钮
@@ -612,37 +419,6 @@ document.addEventListener('click', (e) => {
     }
   }
 });
-
-// ===== 触摸滑动支持 =====
-let touchStartX = 0;
-let touchEndX = 0;
-
-document.addEventListener('DOMContentLoaded', () => {
-  const reviewCard = document.getElementById('review-card');
-  if (reviewCard) {
-    reviewCard.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    reviewCard.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    }, { passive: true });
-  }
-});
-
-function handleSwipe() {
-  const swipeThreshold = 60;
-  const diff = touchStartX - touchEndX;
-
-  if (Math.abs(diff) > swipeThreshold) {
-    if (diff > 0) {
-      nextCard(); // 左滑 → 下一个
-    } else {
-      prevCard(); // 右滑 → 上一个
-    }
-  }
-}
 
 // ===== 主题切换 =====
 const THEME_KEY = 'wordbook_theme';
@@ -673,7 +449,6 @@ function applyTheme(theme) {
   } else {
     html.setAttribute('data-theme', theme);
   }
-  // 更新 manifest theme-color
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   const themeColors = {
     '': '#4F46E5',
@@ -686,12 +461,7 @@ function applyTheme(theme) {
   if (metaTheme) {
     metaTheme.content = themeColors[theme] || '#4F46E5';
   }
-  // 更新激活状态
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
   });
-}
-
-function toggleThemePicker() {
-  showSettings();
 }

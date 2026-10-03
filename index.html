@@ -81,26 +81,13 @@
     </svg>
   </div>
 
-  <!-- 主应用页 -->
+  <!-- 主应用页（单词本） -->
   <div id="app-page" class="page app-page">
     <!-- 顶部导航 -->
     <header class="app-header">
       <h1>我的单词本</h1>
       <div class="header-actions">
         <span id="word-count" class="word-count">0 词</span>
-        <button class="icon-btn" onclick="toggleThemePicker()" title="切换主题">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-          </svg>
-        </button>
         <button class="icon-btn" onclick="showSettings()" title="设置">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
@@ -119,9 +106,9 @@
       <input type="text" id="search-input" placeholder="搜索单词、释义或例句..." oninput="handleSearch()">
     </div>
 
-    <!-- 标签筛选 -->
-    <div id="tag-filter" class="tag-filter">
-      <button class="tag-btn active" data-tag="" onclick="filterByTag('')">全部</button>
+    <!-- 年份筛选 -->
+    <div id="year-filter" class="tag-filter">
+      <button class="tag-btn active" data-year="" onclick="filterByYear('')">全部</button>
     </div>
 
     <!-- 主内容区 -->
@@ -142,106 +129,8 @@
       </div>
     </main>
 
-    <!-- 底部导航 -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-tab="list" onclick="switchTab('list')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
-        <span>单词本</span>
-      </button>
-      <button class="nav-item" data-tab="review" onclick="switchTab('review')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/>
-          <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
-        </svg>
-        <span>复习</span>
-      </button>
-      <button class="nav-item" data-tab="import" onclick="switchTab('import')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <span>导入</span>
-      </button>
-    </nav>
-
     <!-- 添加单词按钮 -->
     <button class="fab" onclick="showAddWordModal()">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- 复习页面 -->
-  <div id="review-page" class="page review-page hidden">
-    <header class="app-header">
-      <button class="icon-btn back-btn" onclick="switchTab('list')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-      <h1>复习模式</h1>
-      <div class="review-progress">
-        <span id="review-current">1</span> / <span id="review-total">0</span>
-      </div>
-    </header>
-
-    <div class="review-container">
-      <div id="review-card" class="review-card" onclick="flipCard()">
-        <div class="review-card-front">
-          <div class="review-word">
-            <span id="review-word"></span>
-            <button class="speak-btn" onclick="event.stopPropagation(); speakCurrentWord()" title="朗读">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                <path d="M15.54 8.46a5 5 0 010 7.07"/>
-              </svg>
-            </button>
-          </div>
-          <div class="review-phonetic" id="review-phonetic"></div>
-          <div class="review-hint">点击翻转</div>
-        </div>
-        <div class="review-card-back">
-          <div class="review-meaning" id="review-meaning"></div>
-          <div class="review-example" id="review-example"></div>
-        </div>
-      </div>
-
-      <div class="review-controls">
-        <button class="review-btn review-prev" onclick="prevCard()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          上一个
-        </button>
-        <button class="review-btn review-shuffle" onclick="shuffleCards()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="16 3 21 3 21 8"/>
-            <line x1="4" y1="20" x2="21" y2="3"/>
-            <polyline points="21 16 21 21 16 21"/>
-            <line x1="15" y1="15" x2="21" y2="21"/>
-            <line x1="4" y1="4" x2="9" y2="9"/>
-          </svg>
-          随机
-        </button>
-        <button class="review-btn review-next" onclick="nextCard()">
-          下一个
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- 复习模式下添加新词按钮 -->
-    <button class="fab fab-review" onclick="showAddWordModal()" title="添加新词">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
@@ -258,12 +147,19 @@
         </svg>
       </button>
       <h1>批量导入</h1>
+      <span style="width:36px"></span>
     </header>
 
     <div class="import-container">
       <div class="import-tabs">
         <button class="import-tab active" data-import-tab="text" onclick="switchImportTab('text')">文本导入</button>
         <button class="import-tab" data-import-tab="json" onclick="switchImportTab('json')">JSON 导入</button>
+      </div>
+
+      <!-- 年份选择 -->
+      <div class="form-group import-year-group">
+        <label for="import-year">归入年份 <span class="label-optional">（可选）</span></label>
+        <input type="text" id="import-year" list="year-options" placeholder="如 2025，留空则归入「未分类」">
       </div>
 
       <!-- 文本导入 -->
@@ -273,11 +169,12 @@
           <ul>
             <li><code>单词 | 中文释义 | 例句</code></li>
             <li><code>单词 | 中文释义</code></li>
-            <li><code>单词</code>（仅英文，自动查词补全）</li>
+            <li><code>单词</code>（仅英文，释义留空）</li>
           </ul>
         </div>
         <textarea id="import-text" class="import-textarea" placeholder="abandon | 放弃；抛弃 | She abandoned her car.
-apple | 苹果&#10;banana"></textarea>
+apple | 苹果
+banana"></textarea>
         <div class="import-actions">
           <button class="btn btn-primary btn-block" onclick="previewImport()">预览导入</button>
         </div>
@@ -306,6 +203,56 @@ apple | 苹果&#10;banana"></textarea>
     </div>
   </div>
 
+  <!-- 作文功能句页面 -->
+  <div id="writing-page" class="page writing-page hidden">
+    <header class="app-header">
+      <button class="icon-btn back-btn" onclick="switchTab('list')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1>作文功能句</h1>
+      <span style="width:36px"></span>
+    </header>
+
+    <div class="writing-placeholder">
+      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+      <p class="writing-placeholder-title">作文功能句</p>
+      <p class="writing-placeholder-hint">这里将整理考研英语作文的常用句型与模板<br>（功能待开发，敬请期待）</p>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="list" onclick="switchTab('list')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span>单词本</span>
+    </button>
+    <button class="nav-item" data-tab="import" onclick="switchTab('import')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <span>导入</span>
+    </button>
+    <button class="nav-item" data-tab="writing" onclick="switchTab('writing')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+      <span>作文句</span>
+    </button>
+  </nav>
+
   <!-- 添加/编辑单词弹窗 -->
   <div id="word-modal" class="modal hidden">
     <div class="modal-overlay" onclick="closeWordModal()"></div>
@@ -325,10 +272,7 @@ apple | 苹果&#10;banana"></textarea>
 
         <div class="form-group">
           <label for="word-input">英文单词</label>
-          <div class="input-with-btn">
-            <input type="text" id="word-input" placeholder="输入英文单词" onkeydown="if(event.key==='Enter') lookupWord()">
-            <button class="btn btn-primary" onclick="lookupWord()" id="lookup-btn">查词</button>
-          </div>
+          <input type="text" id="word-input" placeholder="输入英文单词">
         </div>
 
         <div class="form-group">
@@ -342,13 +286,13 @@ apple | 苹果&#10;banana"></textarea>
         </div>
 
         <div class="form-group">
-          <label for="example-input">例句 <span class="label-optional">（可选，查词时的原句）</span></label>
-          <textarea id="example-input" rows="3" placeholder="粘贴你查词时遇到的原文句子..."></textarea>
+          <label for="year-input">年份 <span class="label-optional">（考研真题年份，可选）</span></label>
+          <input type="text" id="year-input" list="year-options" placeholder="如 2025，留空归入「未分类」">
         </div>
 
         <div class="form-group">
-          <label for="tags-input">标签 <span class="label-optional">（可选，用逗号分隔）</span></label>
-          <input type="text" id="tags-input" placeholder="阅读真题, 考研, CET6">
+          <label for="example-input">例句 <span class="label-optional">（可选）</span></label>
+          <textarea id="example-input" rows="3" placeholder="粘贴真题中遇到的原文句子..."></textarea>
         </div>
       </div>
 
@@ -377,7 +321,10 @@ apple | 苹果&#10;banana"></textarea>
         <div class="settings-section">
           <h3>账号</h3>
           <div class="settings-item">
-            <span id="user-email">本地模式</span>
+            <span id="user-email">本地模式（未登录）</span>
+          </div>
+          <div class="settings-item" id="account-actions">
+            <button class="btn btn-primary btn-sm" onclick="openAuthModal()">登录 / 注册</button>
           </div>
         </div>
 
@@ -429,11 +376,65 @@ apple | 苹果&#10;banana"></textarea>
 
         <div class="settings-section">
           <h3>关于</h3>
-          <p class="settings-about">我的单词本 v1.0<br>记录做题中遇到的每一个生词</p>
+          <p class="settings-about">我的单词本 v2.0<br>按考研年份整理真题生词</p>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- 登录/注册弹窗 -->
+  <div id="auth-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeAuthModal()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>登录 / 注册</h2>
+        <button class="icon-btn" onclick="closeAuthModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="auth-hint">登录后可在手机、平板、电脑间同步单词</p>
+        <div class="form-group">
+          <label for="auth-email">邮箱</label>
+          <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="auth-password">密码</label>
+          <input type="password" id="auth-password" placeholder="至少 6 位" autocomplete="current-password">
+        </div>
+        <div class="auth-actions">
+          <button class="btn btn-primary btn-block" onclick="handleSignIn()">登录</button>
+          <button class="btn btn-outline btn-block" onclick="handleSignUp()">注册新账号</button>
+        </div>
+        <p class="auth-tip">已有账号直接登录；没有账号点「注册新账号」</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 年份建议选项 -->
+  <datalist id="year-options">
+    <option value="2026"></option>
+    <option value="2025"></option>
+    <option value="2024"></option>
+    <option value="2023"></option>
+    <option value="2022"></option>
+    <option value="2021"></option>
+    <option value="2020"></option>
+    <option value="2019"></option>
+    <option value="2018"></option>
+    <option value="2017"></option>
+    <option value="2016"></option>
+    <option value="2015"></option>
+    <option value="2014"></option>
+    <option value="2013"></option>
+    <option value="2012"></option>
+    <option value="2011"></option>
+    <option value="2010"></option>
+  </datalist>
 
   <!-- Toast 提示 -->
   <div id="toast" class="toast hidden">
@@ -458,10 +459,11 @@ apple | 苹果&#10;banana"></textarea>
     </div>
   </div>
 
-  <script src="js/db.js?v=5"></script>
-  <script src="js/auth.js?v=5"></script>
-  <script src="js/ui.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/db.js?v=7"></script>
+  <script src="js/auth.js?v=7"></script>
+  <script src="js/ui.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 
   <script>
     // Service Worker 注册

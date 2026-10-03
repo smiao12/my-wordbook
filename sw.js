@@ -1,8 +1,9 @@
-const CACHE_NAME = 'wordbook-v4';
+const CACHE_NAME = 'wordbook-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
+  '/js/supabase.js',
   '/js/app.js',
   '/js/auth.js',
   '/js/db.js',

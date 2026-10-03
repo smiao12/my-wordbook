@@ -1612,3 +1612,144 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== v2: 年份分组 ===== */
+.year-group {
+  margin-bottom: 16px;
+}
+
+.year-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 4px 8px;
+}
+
+.year-group-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.year-group-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.year-group-words {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===== v2: 单词行（表格形式） ===== */
+.word-row {
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+
+.word-row:last-child {
+  border-bottom: none;
+}
+
+.word-row:active {
+  background: var(--surface-hover);
+}
+
+.word-row-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.word-row-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.word-row .word-action-btn {
+  opacity: 1;
+  flex-shrink: 0;
+}
+
+/* ===== v2: 作文功能句占位 ===== */
+.writing-page {
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom));
+}
+
+.writing-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.writing-placeholder svg {
+  opacity: 0.4;
+  margin-bottom: 16px;
+}
+
+.writing-placeholder-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.writing-placeholder-hint {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-muted);
+}
+
+/* ===== v2: PDF 年份分组标题 ===== */
+.pdf-year-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1E293B;
+  margin: 16px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid #E2E8F0;
+}
+
+.pdf-year-header:first-child {
+  margin-top: 0;
+}
+
+/* ===== v2: 登录弹窗 ===== */
+.auth-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.auth-tip {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 12px;
+}
