@@ -54,6 +54,20 @@ function sortYearValues(years) {
   });
 }
 
+// 按年份分组排序，返回扁平数组（与列表显示顺序一致）
+function sortWordsForDisplay(words) {
+  const groups = new Map();
+  words.forEach(word => {
+    const year = (word.year || '').trim();
+    if (!groups.has(year)) groups.set(year, []);
+    groups.get(year).push(word);
+  });
+  const years = sortYearValues(Array.from(groups.keys()));
+  const result = [];
+  years.forEach(year => result.push(...groups.get(year)));
+  return result;
+}
+
 // ===== 事件委托：点击处理 =====
 document.addEventListener('click', (e) => {
   // 删除单词
@@ -87,12 +101,13 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ===== 渲染单个单词行 =====
-function renderWordRow(word) {
+// ===== 渲染单个单词行（带全局序号 + 年份内序号） =====
+function renderWordRow(word, globalIndex, yearIndex) {
   return `
     <div class="word-row" data-id="${escapeHtml(word.id)}">
       <div class="word-row-main">
         <div class="word-row-title">
+          <span class="word-index">${globalIndex}</span>
           <span class="word-text">${escapeHtml(word.word)}</span>
           ${word.phonetic ? `<span class="word-phonetic">${escapeHtml(word.phonetic)}</span>` : ''}
           <button class="speak-btn" data-speak="${escapeHtml(word.word)}" title="朗读">
@@ -102,12 +117,15 @@ function renderWordRow(word) {
             </svg>
           </button>
         </div>
-        <button class="word-action-btn" data-action="delete" data-id="${escapeHtml(word.id)}" title="删除">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-          </svg>
-        </button>
+        <div class="word-row-right">
+          <span class="word-year-index" title="本年份内序号">#${yearIndex}</span>
+          <button class="word-action-btn" data-action="delete" data-id="${escapeHtml(word.id)}" title="删除">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="word-meaning">${escapeHtml(word.meaning)}</div>
       ${word.example ? `<div class="word-example">${escapeHtml(word.example)}</div>` : ''}
@@ -143,6 +161,7 @@ function renderWordList(words) {
 
   const years = sortYearValues(Array.from(groups.keys()));
   let html = '';
+  let globalIndex = 0;
   years.forEach(year => {
     const yearWords = groups.get(year);
     const label = year === '' ? '未分类' : year;
@@ -152,8 +171,9 @@ function renderWordList(words) {
     html += `<span class="year-group-count">${yearWords.length} 词</span>`;
     html += `</div>`;
     html += `<div class="year-group-words">`;
-    yearWords.forEach(word => {
-      html += renderWordRow(word);
+    yearWords.forEach((word, i) => {
+      globalIndex++;
+      html += renderWordRow(word, globalIndex, i + 1);
     });
     html += `</div></div>`;
   });
@@ -165,9 +185,11 @@ function renderWordList(words) {
 function renderYearFilter() {
   const container = document.getElementById('year-filter');
   const yearSet = new Set();
+  let hasUncategorized = false;
   allWords.forEach(word => {
     const y = (word.year || '').trim();
     if (y !== '') yearSet.add(y);
+    else hasUncategorized = true;
   });
 
   const years = sortYearValues(Array.from(yearSet));
@@ -175,6 +197,9 @@ function renderYearFilter() {
   years.forEach(year => {
     html += `<button class="tag-btn ${activeYear === year ? 'active' : ''}" data-year="${escapeHtml(year)}" onclick="filterByYear('${escapeHtml(year)}')">${escapeHtml(year)}</button>`;
   });
+  if (hasUncategorized) {
+    html += `<button class="tag-btn ${activeYear === '__uncat__' ? 'active' : ''}" data-year="__uncat__" onclick="filterByYear('__uncat__')">未分类</button>`;
+  }
   container.innerHTML = html;
 }
 
@@ -188,15 +213,16 @@ function switchTab(tab) {
   // 隐藏所有页面
   document.getElementById('app-page').classList.add('hidden');
   document.getElementById('import-page').classList.add('hidden');
-  document.getElementById('writing-page').classList.add('hidden');
+  document.getElementById('flashcard-page').classList.add('hidden');
 
   // 显示对应页面
   if (tab === 'list') {
     document.getElementById('app-page').classList.remove('hidden');
   } else if (tab === 'import') {
     document.getElementById('import-page').classList.remove('hidden');
-  } else if (tab === 'writing') {
-    document.getElementById('writing-page').classList.remove('hidden');
+  } else if (tab === 'flashcard') {
+    document.getElementById('flashcard-page').classList.remove('hidden');
+    initFlashcard();
   }
 }
 

@@ -197,31 +197,71 @@ banana"></textarea>
         <div id="import-preview-list" class="import-preview-list"></div>
         <div class="import-actions">
           <button class="btn btn-outline" onclick="cancelImport()">取消</button>
-          <button class="btn btn-primary" onclick="confirmImport()">确认导入</button>
+          <button class="btn btn-primary btn-block" id="confirm-import-btn" onclick="confirmImport()">确认导入</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 作文功能句页面 -->
-  <div id="writing-page" class="page writing-page hidden">
+  <!-- 记背模式页面（闪卡） -->
+  <div id="flashcard-page" class="page flashcard-page hidden">
     <header class="app-header">
       <button class="icon-btn back-btn" onclick="switchTab('list')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <h1>作文功能句</h1>
-      <span style="width:36px"></span>
+      <h1>记背模式</h1>
+      <div class="review-progress">
+        <span id="fc-current">1</span> / <span id="fc-total">0</span>
+      </div>
     </header>
 
-    <div class="writing-placeholder">
-      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M12 20h9"/>
-        <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-      </svg>
-      <p class="writing-placeholder-title">作文功能句</p>
-      <p class="writing-placeholder-hint">这里将整理考研英语作文的常用句型与模板<br>（功能待开发，敬请期待）</p>
+    <div class="review-container">
+      <div id="flashcard" class="review-card" onclick="flipFlashcard()">
+        <div class="review-card-front">
+          <div class="review-word">
+            <span id="fc-word"></span>
+            <button class="speak-btn" onclick="event.stopPropagation(); speakFlashcardWord()" title="朗读">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 010 7.07"/>
+              </svg>
+            </button>
+          </div>
+          <div class="review-phonetic" id="fc-phonetic"></div>
+          <div class="review-hint">点击卡片翻面看释义</div>
+        </div>
+        <div class="review-card-back">
+          <div class="review-meaning" id="fc-meaning"></div>
+          <div class="review-example" id="fc-example"></div>
+        </div>
+      </div>
+
+      <div class="review-controls">
+        <button class="review-btn review-prev" onclick="prevFlashcard()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          上一个
+        </button>
+        <button class="review-btn review-shuffle" onclick="shuffleFlashcard()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+          随机
+        </button>
+        <button class="review-btn review-next" onclick="nextFlashcard()">
+          下一个
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -244,12 +284,12 @@ banana"></textarea>
       </svg>
       <span>导入</span>
     </button>
-    <button class="nav-item" data-tab="writing" onclick="switchTab('writing')">
+    <button class="nav-item" data-tab="flashcard" onclick="switchTab('flashcard')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 20h9"/>
-        <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/>
+        <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
       </svg>
-      <span>作文句</span>
+      <span>记背</span>
     </button>
   </nav>
 
@@ -460,10 +500,10 @@ banana"></textarea>
   </div>
 
   <script src="js/supabase.js"></script>
-  <script src="js/db.js?v=7"></script>
-  <script src="js/auth.js?v=7"></script>
-  <script src="js/ui.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/db.js?v=8"></script>
+  <script src="js/auth.js?v=8"></script>
+  <script src="js/ui.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 
   <script>
     // Service Worker 注册

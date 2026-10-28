@@ -81,8 +81,10 @@ async function loadWords() {
 function applyFilters() {
   const query = document.getElementById('search-input').value.trim().toLowerCase();
   filteredWords = allWords.filter(word => {
-    if (activeYear !== '') {
-      const y = (word.year || '').trim();
+    const y = (word.year || '').trim();
+    if (activeYear === '__uncat__') {
+      if (y !== '') return false;
+    } else if (activeYear !== '') {
       if (y !== activeYear) return false;
     }
     if (query) {
@@ -243,6 +245,11 @@ function renderImportPreview() {
       ${w.example ? `<div class="import-preview-example">${escapeHtml(w.example)}</div>` : ''}
     </div>
   `).join('');
+
+  const confirmBtn = document.getElementById('confirm-import-btn');
+  if (confirmBtn) {
+    confirmBtn.textContent = `确认导入 ${pendingImportWords.length} 条单词`;
+  }
 
   preview.classList.remove('hidden');
 }
@@ -420,6 +427,78 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ===== 记背模式（闪卡） =====
+let flashcardWords = [];
+let flashcardIndex = 0;
+let isFlashcardRandom = false;
+
+function initFlashcard() {
+  flashcardWords = sortWordsForDisplay(filteredWords);
+  flashcardIndex = 0;
+  isFlashcardRandom = false;
+  renderFlashcardCard();
+}
+
+function renderFlashcardCard() {
+  const card = document.getElementById('flashcard');
+  if (flashcardWords.length === 0) {
+    document.getElementById('fc-word').textContent = '暂无单词';
+    document.getElementById('fc-phonetic').textContent = '';
+    document.getElementById('fc-meaning').textContent = '先去添加一些单词吧';
+    document.getElementById('fc-example').textContent = '';
+    document.getElementById('fc-current').textContent = '0';
+    document.getElementById('fc-total').textContent = '0';
+    if (card) card.classList.remove('flipped');
+    return;
+  }
+  const word = flashcardWords[flashcardIndex];
+  document.getElementById('fc-word').textContent = word.word;
+  document.getElementById('fc-phonetic').textContent = word.phonetic || '';
+  document.getElementById('fc-meaning').textContent = word.meaning;
+  document.getElementById('fc-example').textContent = word.example || '';
+  document.getElementById('fc-current').textContent = flashcardIndex + 1;
+  document.getElementById('fc-total').textContent = flashcardWords.length;
+  if (card) card.classList.remove('flipped');
+}
+
+function flipFlashcard() {
+  document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+function nextFlashcard() {
+  if (flashcardWords.length === 0) return;
+  flashcardIndex = (flashcardIndex + 1) % flashcardWords.length;
+  renderFlashcardCard();
+}
+
+function prevFlashcard() {
+  if (flashcardWords.length === 0) return;
+  flashcardIndex = (flashcardIndex - 1 + flashcardWords.length) % flashcardWords.length;
+  renderFlashcardCard();
+}
+
+function shuffleFlashcard() {
+  if (flashcardWords.length <= 1) return;
+  isFlashcardRandom = !isFlashcardRandom;
+  if (isFlashcardRandom) {
+    for (let i = flashcardWords.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [flashcardWords[i], flashcardWords[j]] = [flashcardWords[j], flashcardWords[i]];
+    }
+  } else {
+    flashcardWords = sortWordsForDisplay(filteredWords);
+  }
+  flashcardIndex = 0;
+  renderFlashcardCard();
+  showToast(isFlashcardRandom ? '已随机排序' : '已恢复顺序');
+}
+
+function speakFlashcardWord() {
+  if (flashcardWords.length === 0) return;
+  const word = flashcardWords[flashcardIndex];
+  if (word) speakWord(word.word);
+}
+
 // ===== 主题切换 =====
 const THEME_KEY = 'wordbook_theme';
 
@@ -453,7 +532,7 @@ function applyTheme(theme) {
   const themeColors = {
     '': '#4F46E5',
     'dark': '#0F172A',
-    'light-purple': '#FAF5FF',
+    'light-purple': '#FBF4F8',
     'light-yellow': '#FFFBEB',
     'sakura-pink': '#FDF2F8',
     'matcha-green': '#F7FEE7'

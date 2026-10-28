@@ -6,7 +6,7 @@
 function showAppPage() {
   document.getElementById('app-page').classList.remove('hidden');
   document.getElementById('import-page').classList.add('hidden');
-  document.getElementById('writing-page').classList.add('hidden');
+  document.getElementById('flashcard-page').classList.add('hidden');
 }
 
 // 保留空壳，避免历史引用报错
