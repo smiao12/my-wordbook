@@ -252,6 +252,9 @@ function renderImportPreview() {
   }
 
   preview.classList.remove('hidden');
+  setTimeout(() => {
+    preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
 function cancelImport() {
@@ -431,11 +434,15 @@ document.addEventListener('click', (e) => {
 let flashcardWords = [];
 let flashcardIndex = 0;
 let isFlashcardRandom = false;
+let flashcardInitialized = false;
 
 function initFlashcard() {
-  flashcardWords = sortWordsForDisplay(filteredWords);
-  flashcardIndex = 0;
-  isFlashcardRandom = false;
+  if (!flashcardInitialized) {
+    flashcardWords = sortWordsForDisplay(filteredWords);
+    flashcardIndex = 0;
+    isFlashcardRandom = false;
+    flashcardInitialized = true;
+  }
   renderFlashcardCard();
 }
 
@@ -449,6 +456,7 @@ function renderFlashcardCard() {
     document.getElementById('fc-current').textContent = '0';
     document.getElementById('fc-total').textContent = '0';
     if (card) card.classList.remove('flipped');
+    updateMasteryButtons('');
     return;
   }
   const word = flashcardWords[flashcardIndex];
@@ -459,6 +467,30 @@ function renderFlashcardCard() {
   document.getElementById('fc-current').textContent = flashcardIndex + 1;
   document.getElementById('fc-total').textContent = flashcardWords.length;
   if (card) card.classList.remove('flipped');
+  updateMasteryButtons(word.mastery || '');
+}
+
+function updateMasteryButtons(mastery) {
+  document.querySelectorAll('.mastery-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mastery === mastery);
+  });
+}
+
+function markMastery(mastery) {
+  if (flashcardWords.length === 0) return;
+  const word = flashcardWords[flashcardIndex];
+  if (!word) return;
+
+  word.mastery = mastery;
+  const idx = allWords.findIndex(w => w.id === word.id);
+  if (idx >= 0) allWords[idx].mastery = mastery;
+
+  // 异步保存（不阻塞）
+  db.update(word.id, { mastery }).catch(e => console.error('标注保存失败', e));
+
+  updateMasteryButtons(mastery);
+  // 短暂高亮后自动跳到下一个
+  setTimeout(() => nextFlashcard(), 350);
 }
 
 function flipFlashcard() {
@@ -497,6 +529,56 @@ function speakFlashcardWord() {
   if (flashcardWords.length === 0) return;
   const word = flashcardWords[flashcardIndex];
   if (word) speakWord(word.word);
+}
+
+// ===== 记背计时 =====
+let timerRunning = false;
+let timerElapsedMs = 0;
+let timerLastTick = 0;
+let timerIntervalId = null;
+
+function startTimer() {
+  if (timerRunning) return;
+  timerRunning = true;
+  timerLastTick = Date.now();
+  timerIntervalId = setInterval(() => {
+    const now = Date.now();
+    timerElapsedMs += now - timerLastTick;
+    timerLastTick = now;
+    renderTimer();
+  }, 1000);
+  renderTimer();
+  updateTimerButton();
+}
+
+function pauseTimer() {
+  if (!timerRunning) return;
+  timerRunning = false;
+  clearInterval(timerIntervalId);
+  const now = Date.now();
+  timerElapsedMs += now - timerLastTick;
+  renderTimer();
+  updateTimerButton();
+}
+
+function toggleTimer() {
+  if (timerRunning) pauseTimer();
+  else startTimer();
+}
+
+function renderTimer() {
+  const el = document.getElementById('timer-display');
+  if (!el) return;
+  const totalSec = Math.floor(timerElapsedMs / 1000);
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const ss = String(totalSec % 60).padStart(2, '0');
+  el.textContent = `${mm}:${ss}`;
+}
+
+function updateTimerButton() {
+  const btn = document.getElementById('timer-toggle');
+  if (!btn) return;
+  btn.textContent = timerRunning ? '暂停' : '开始';
 }
 
 // ===== 主题切换 =====

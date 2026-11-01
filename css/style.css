@@ -1781,3 +1781,79 @@ textarea {
   gap: 8px;
   flex-shrink: 0;
 }
+
+/* ===== v2: 记背计时器 ===== */
+.timer-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-display {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+  text-align: right;
+}
+
+.timer-toggle {
+  padding: 4px 10px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.timer-toggle:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* ===== v2: 记背标注按钮 ===== */
+.mastery-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.mastery-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mastery-btn[data-mastery="unknown"]:hover,
+.mastery-btn[data-mastery="unknown"].active {
+  border-color: #EF4444;
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.mastery-btn[data-mastery="unfamiliar"]:hover,
+.mastery-btn[data-mastery="unfamiliar"].active {
+  border-color: #F59E0B;
+  color: #F59E0B;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.mastery-btn[data-mastery="familiar"]:hover,
+.mastery-btn[data-mastery="familiar"].active {
+  border-color: #10B981;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.08);
+}

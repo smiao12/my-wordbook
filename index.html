@@ -212,12 +212,16 @@ banana"></textarea>
         </svg>
       </button>
       <h1>记背模式</h1>
-      <div class="review-progress">
-        <span id="fc-current">1</span> / <span id="fc-total">0</span>
+      <div class="timer-box">
+        <span id="timer-display" class="timer-display">00:00</span>
+        <button class="timer-toggle" id="timer-toggle" onclick="toggleTimer()">开始</button>
       </div>
     </header>
 
     <div class="review-container">
+      <div class="review-progress">
+        <span id="fc-current">1</span> / <span id="fc-total">0</span>
+      </div>
       <div id="flashcard" class="review-card" onclick="flipFlashcard()">
         <div class="review-card-front">
           <div class="review-word">
@@ -236,6 +240,12 @@ banana"></textarea>
           <div class="review-meaning" id="fc-meaning"></div>
           <div class="review-example" id="fc-example"></div>
         </div>
+      </div>
+
+      <div class="mastery-buttons">
+        <button class="mastery-btn" data-mastery="unknown" onclick="markMastery('unknown')">不认识</button>
+        <button class="mastery-btn" data-mastery="unfamiliar" onclick="markMastery('unfamiliar')">不熟悉</button>
+        <button class="mastery-btn" data-mastery="familiar" onclick="markMastery('familiar')">熟悉</button>
       </div>
 
       <div class="review-controls">
@@ -500,10 +510,10 @@ banana"></textarea>
   </div>
 
   <script src="js/supabase.js"></script>
-  <script src="js/db.js?v=8"></script>
-  <script src="js/auth.js?v=8"></script>
-  <script src="js/ui.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
+  <script src="js/db.js?v=9"></script>
+  <script src="js/auth.js?v=9"></script>
+  <script src="js/ui.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 
   <script>
     // Service Worker 注册
