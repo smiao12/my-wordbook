@@ -105,6 +105,7 @@ function handleSearch() {
 // ===== 年份筛选 =====
 function filterByYear(year) {
   activeYear = year;
+  flashcardInitialized = false;  // 切换年份筛选后，重新加载记背词库
   document.querySelectorAll('.tag-btn').forEach(btn => {
     btn.classList.toggle('active', (btn.dataset.year || '') === year);
   });
@@ -579,6 +580,16 @@ function updateTimerButton() {
   const btn = document.getElementById('timer-toggle');
   if (!btn) return;
   btn.textContent = timerRunning ? '暂停' : '开始';
+}
+
+function resetTimer() {
+  if (timerRunning) {
+    clearInterval(timerIntervalId);
+    timerRunning = false;
+  }
+  timerElapsedMs = 0;
+  renderTimer();
+  updateTimerButton();
 }
 
 // ===== 主题切换 =====

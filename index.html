@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
   <!-- 主题装饰层 -->
@@ -215,6 +215,7 @@ banana"></textarea>
       <div class="timer-box">
         <span id="timer-display" class="timer-display">00:00</span>
         <button class="timer-toggle" id="timer-toggle" onclick="toggleTimer()">开始</button>
+        <button class="timer-reset" onclick="resetTimer()" title="重置计时">重置</button>
       </div>
     </header>
 
@@ -510,10 +511,10 @@ banana"></textarea>
   </div>
 
   <script src="js/supabase.js"></script>
-  <script src="js/db.js?v=9"></script>
-  <script src="js/auth.js?v=9"></script>
-  <script src="js/ui.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/db.js?v=10"></script>
+  <script src="js/auth.js?v=10"></script>
+  <script src="js/ui.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 
   <script>
     // Service Worker 注册

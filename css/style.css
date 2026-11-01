@@ -781,12 +781,15 @@ textarea {
 
 .review-container {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 24px;
+  justify-content: flex-start;
+  padding: 20px 20px calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  gap: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .review-card {
@@ -920,7 +923,8 @@ textarea {
 /* ===== Import Page ===== */
 .import-container {
   flex: 1;
-  padding: 16px;
+  min-height: 0;
+  padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1816,6 +1820,24 @@ textarea {
   color: white;
 }
 
+.timer-reset {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.timer-reset:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 /* ===== v2: 记背标注按钮 ===== */
 .mastery-buttons {
   display: flex;
@@ -1856,4 +1878,12 @@ textarea {
   border-color: #10B981;
   color: #10B981;
   background: rgba(16, 185, 129, 0.08);
+}
+
+/* ===== v2: 全屏页面（固定高度 + 内部滚动，避免底部被遮挡） ===== */
+.import-page,
+.flashcard-page {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
