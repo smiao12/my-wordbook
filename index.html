@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
   <!-- 主题装饰层 -->
@@ -223,6 +223,14 @@ banana"></textarea>
       <div class="review-progress">
         <span id="fc-current">1</span> / <span id="fc-total">0</span>
       </div>
+
+      <div class="mastery-filter">
+        <button class="mastery-filter-btn active" data-filter="" onclick="filterMastery('')">全部</button>
+        <button class="mastery-filter-btn" data-filter="unknown" onclick="filterMastery('unknown')">不认识</button>
+        <button class="mastery-filter-btn" data-filter="unfamiliar" onclick="filterMastery('unfamiliar')">不熟悉</button>
+        <button class="mastery-filter-btn" data-filter="familiar" onclick="filterMastery('familiar')">熟悉</button>
+      </div>
+
       <div id="flashcard" class="review-card" onclick="flipFlashcard()">
         <div class="review-card-front">
           <div class="review-word">
@@ -511,10 +519,10 @@ banana"></textarea>
   </div>
 
   <script src="js/supabase.js"></script>
-  <script src="js/db.js?v=10"></script>
-  <script src="js/auth.js?v=10"></script>
-  <script src="js/ui.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/db.js?v=11"></script>
+  <script src="js/auth.js?v=11"></script>
+  <script src="js/ui.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
 
   <script>
     // Service Worker 注册

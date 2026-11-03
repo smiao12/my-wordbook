@@ -436,15 +436,29 @@ let flashcardWords = [];
 let flashcardIndex = 0;
 let isFlashcardRandom = false;
 let flashcardInitialized = false;
+let masteryFilter = ''; // '' = 全部, 'unknown'/'unfamiliar'/'familiar'
 
 function initFlashcard() {
   if (!flashcardInitialized) {
-    flashcardWords = sortWordsForDisplay(filteredWords);
+    let words = sortWordsForDisplay(filteredWords);
+    if (masteryFilter !== '') {
+      words = words.filter(w => (w.mastery || '') === masteryFilter);
+    }
+    flashcardWords = words;
     flashcardIndex = 0;
     isFlashcardRandom = false;
     flashcardInitialized = true;
   }
   renderFlashcardCard();
+}
+
+function filterMastery(f) {
+  masteryFilter = f;
+  flashcardInitialized = false;
+  document.querySelectorAll('.mastery-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', (btn.dataset.filter || '') === f);
+  });
+  initFlashcard();
 }
 
 function renderFlashcardCard() {
@@ -490,8 +504,12 @@ function markMastery(mastery) {
   db.update(word.id, { mastery }).catch(e => console.error('标注保存失败', e));
 
   updateMasteryButtons(mastery);
-  // 短暂高亮后自动跳到下一个
-  setTimeout(() => nextFlashcard(), 350);
+
+  // 自动翻面展示意思（如果还没翻面），不自动跳到下一个
+  const card = document.getElementById('flashcard');
+  if (card && !card.classList.contains('flipped')) {
+    card.classList.add('flipped');
+  }
 }
 
 function flipFlashcard() {

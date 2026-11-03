@@ -1887,3 +1887,32 @@ textarea {
   height: 100dvh;
   overflow: hidden;
 }
+
+/* ===== v2: 记背熟悉度筛选 ===== */
+.mastery-filter {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 400px;
+  flex-shrink: 0;
+}
+
+.mastery-filter-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.mastery-filter-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
