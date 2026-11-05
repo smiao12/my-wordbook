@@ -324,12 +324,16 @@ var db = {
   },
 
   async update(id, data) {
+    // 本地优先持久化：标注等改动先落到本地（保证永远不丢），云端同步失败不影响本地
+    const updated = await localUpdate(id, data);
     if (isCloudMode()) {
-      const updated = await cloudUpdate(id, data);
-      await localUpdate(id, data);
-      return updated;
+      try {
+        await cloudUpdate(id, data);
+      } catch (e) {
+        console.error('云端同步失败（不影响本地）:', e);
+      }
     }
-    return localUpdate(id, data);
+    return updated;
   },
 
   async delete(id) {
@@ -357,7 +361,7 @@ var db = {
     return localGetAll();
   },
 
-  // 登录后：合并本地缓存 + 云端数据（云端优先，本地独有的上传）
+  // 登录后：合并本地缓存 + 云端数据（按更新时间保留较新的一方）
   async syncFromCloud() {
     const localWords = await localGetAll();
     const cloudWords = await cloudGetAll();
@@ -366,14 +370,25 @@ var db = {
     cloudWords.forEach(w => merged.set(w.id, w));
 
     for (const lw of localWords) {
-      if (!merged.has(lw.id)) {
+      const cw = merged.get(lw.id);
+      if (!cw) {
+        // 本地独有的词，上传到云端
         try {
           const uploaded = await cloudAdd(lw);
           merged.set(uploaded.id, uploaded);
         } catch (e) {
           merged.set(lw.id, lw);
         }
+      } else if (new Date(lw.updated_at) > new Date(cw.updated_at)) {
+        // 本地较新（如刚标记的熟悉度），以本地为准并回传云端
+        try {
+          await cloudUpdate(lw.id, lw);
+          merged.set(lw.id, lw);
+        } catch (e) {
+          merged.set(lw.id, lw);
+        }
       }
+      // 云端较新则保留云端（merged 里已是云端版本）
     }
 
     const result = Array.from(merged.values())
