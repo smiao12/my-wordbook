@@ -52,14 +52,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 尝试恢复登录会话（已登录则同步云端，否则本地模式）
-  const user = await restoreSession();
-  if (user) {
-    await syncAfterLogin();
-  } else {
-    loadWords();
+  // 先秒开本地缓存（不等待云端，立刻可用）
+  await loadWords();
+  updateAccountUI();
+
+  // 后台异步恢复会话 + 同步云端，完成后自动刷新 UI
+  restoreSession().then(async (user) => {
+    if (user) {
+      await syncAfterLogin();
+    } else {
+      updateAccountUI();
+    }
+  }).catch(() => {
+    // 会话恢复失败（如 VPN 未连），保持本地模式
     updateAccountUI();
-  }
+  });
 });
 
 // ===== 加载单词 =====

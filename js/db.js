@@ -315,12 +315,16 @@ var db = {
   },
 
   async add(word) {
+    // 本地优先：先存本地（秒存），云端同步失败不影响本地
+    const saved = await localAdd(word);
     if (isCloudMode()) {
-      const saved = await cloudAdd(word);
-      await localAdd(saved);
-      return saved;
+      try {
+        await cloudAdd(saved);
+      } catch (e) {
+        console.error('云端同步失败（不影响本地）:', e);
+      }
     }
-    return localAdd(word);
+    return saved;
   },
 
   async update(id, data) {
